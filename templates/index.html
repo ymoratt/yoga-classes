@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>שיעורי יוגה | מנטרה</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Signika:wght@400;600;700&family=Basic&display=swap" rel="stylesheet">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #f4faf2;
+      --bg-alt:      #e8f5e2;
+      --white:       #ffffff;
+      --green-mid:   #c3dfc7;
+      --green-light: #d6ead8;
+      --green:       #5a8a5e;
+      --green-dark:  #2e5d34;
+      --text:        #2c3e2d;
+      --text-soft:   #5a6e5b;
+    }
+
+    html { font-family: 'Signika', Arial, Helvetica, sans-serif; scroll-behavior: smooth; }
+
+    body { background: var(--bg); color: var(--text); line-height: 1.7; font-size: 16px; }
+
+    /* ===== HEADER ===== */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      background: rgba(244, 250, 242, 0.96);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--green-mid);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 78px;
+      padding: 8px 24px;
+    }
+
+    header a { display: flex; align-items: center; text-decoration: none; }
+
+    .logo-img {
+      height: 62px;
+      width: 62px;
+      border-radius: 50%;
+      object-fit: contain;
+    }
+
+    /* ===== HERO ===== */
+    .hero {
+      background: linear-gradient(155deg, var(--green-light) 0%, #eaf5eb 55%, var(--bg) 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 60px 24px 50px;
+    }
+
+    .hero-title {
+      font-size: clamp(1.8rem, 5vw, 3rem);
+      font-weight: 700;
+      color: var(--green-dark);
+      margin-bottom: 14px;
+    }
+
+    .hero-sub {
+      font-family: 'Basic', sans-serif;
+      font-size: 1.05rem;
+      color: var(--text-soft);
+      letter-spacing: 0.02em;
+    }
+
+    /* ===== INNER WRAPPER ===== */
+    .wrap-white { background: var(--white); }
+    .wrap-alt   { background: var(--bg-alt); }
+
+    .inner {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 70px 28px;
+    }
+
+    .section-head {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .section-title {
+      font-size: clamp(1.4rem, 3vw, 2rem);
+      font-weight: 700;
+      color: var(--green-dark);
+    }
+
+    /* ===== CLASSES GRID ===== */
+    .classes-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 28px;
+    }
+
+    @media (max-width: 760px) { .classes-grid { grid-template-columns: 1fr; max-width: 360px; margin: 0 auto; } }
+
+    .class-card {
+      background: var(--white);
+      border: 1.5px solid var(--green-mid);
+      border-radius: 22px;
+      padding: 36px 24px 30px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 2px 14px rgba(90,138,94,0.07);
+      transition: transform 0.22s ease, box-shadow 0.22s ease;
+    }
+
+    .class-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 28px rgba(90,138,94,0.15);
+    }
+
+    .class-logo {
+      width: 80px;
+      height: 80px;
+      object-fit: contain;
+      margin-bottom: 6px;
+    }
+
+    .class-day {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--green-dark);
+    }
+
+    .class-date {
+      font-family: 'Basic', sans-serif;
+      font-size: 0.92rem;
+      color: var(--text-soft);
+    }
+
+    .class-time {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--green);
+      font-variant-numeric: tabular-nums;
+      direction: ltr;
+    }
+
+    .card-divider {
+      width: 34px;
+      height: 2px;
+      background: var(--green-mid);
+    }
+
+    .btn-reg {
+      margin-top: 6px;
+      background: var(--green);
+      color: var(--white);
+      border: none;
+      padding: 13px 38px;
+      font-family: 'Signika', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      border-radius: 50px;
+      cursor: pointer;
+      letter-spacing: 0.02em;
+      box-shadow: 0 4px 16px rgba(90,138,94,0.22);
+      transition: background 0.2s, transform 0.18s;
+    }
+
+    .btn-reg:hover { background: #3d6b41; transform: translateY(-2px); }
+
+    .btn-list {
+      background: transparent;
+      color: var(--green);
+      border: 1.5px solid var(--green-mid);
+      padding: 9px 28px;
+      font-family: 'Signika', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 600;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .btn-list:hover { background: var(--bg-alt); border-color: var(--green); }
+
+    /* ===== UNREGISTER SECTION ===== */
+    .unreg-section {
+      text-align: center;
+      padding: 48px 28px;
+      background: var(--bg-alt);
+    }
+
+    .unreg-label {
+      font-family: 'Basic', sans-serif;
+      font-size: 0.92rem;
+      color: var(--text-soft);
+      margin-bottom: 18px;
+    }
+
+    .btn-unreg {
+      background: transparent;
+      color: var(--green-dark);
+      border: 1.5px solid var(--green-mid);
+      padding: 12px 36px;
+      font-family: 'Signika', sans-serif;
+      font-size: 0.97rem;
+      font-weight: 600;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .btn-unreg:hover { background: var(--white); border-color: var(--green); }
+
+    /* ===== FOOTER ===== */
+    footer {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 18px 20px;
+      border-top: 1px solid var(--green-mid);
+      background: var(--bg);
+    }
+
+    footer a { display: flex; align-items: center; text-decoration: none; }
+
+    .logo-img-footer {
+      height: 48px;
+      width: 48px;
+      border-radius: 50%;
+      object-fit: contain;
+    }
+
+    /* ===== MODAL ===== */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(44, 62, 45, 0.52);
+      z-index: 500;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .modal {
+      background: var(--white);
+      border-radius: 26px;
+      padding: 50px 42px 44px;
+      max-width: 460px;
+      width: 100%;
+      position: relative;
+      box-shadow: 0 24px 64px rgba(44,62,45,0.22);
+      animation: slideUp 0.24s ease;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    @media (max-width: 500px) { .modal { padding: 40px 22px 34px; } }
+
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 14px;
+      left: 18px;
+      background: none;
+      border: none;
+      font-size: 1.6rem;
+      cursor: pointer;
+      color: var(--text-soft);
+      line-height: 1;
+      padding: 4px 6px;
+      border-radius: 6px;
+      transition: color 0.15s, background 0.15s;
+    }
+
+    .modal-close:hover { color: var(--green-dark); background: var(--bg-alt); }
+
+    .modal-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--green-dark);
+      text-align: center;
+      margin-bottom: 8px;
+    }
+
+    .modal-subtitle {
+      font-family: 'Basic', sans-serif;
+      font-size: 0.92rem;
+      color: var(--text-soft);
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .form-group { margin-bottom: 18px; }
+
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      color: var(--green-dark);
+      margin-bottom: 6px;
+      font-size: 0.93rem;
+    }
+
+    .form-group input {
+      width: 100%;
+      border: 1.5px solid var(--green-mid);
+      border-radius: 11px;
+      padding: 12px 16px;
+      font-family: 'Signika', sans-serif;
+      font-size: 1rem;
+      color: var(--text);
+      background: var(--bg);
+      outline: none;
+      direction: rtl;
+      transition: border-color 0.18s;
+    }
+
+    .form-group input:focus { border-color: var(--green); }
+
+    .btn-submit {
+      width: 100%;
+      background: var(--green);
+      color: var(--white);
+      border: none;
+      padding: 14px;
+      font-family: 'Signika', sans-serif;
+      font-size: 1.05rem;
+      font-weight: 700;
+      border-radius: 11px;
+      cursor: pointer;
+      margin-top: 4px;
+      letter-spacing: 0.02em;
+      transition: background 0.2s;
+    }
+
+    .btn-submit:hover { background: #3d6b41; }
+    .btn-submit:disabled { background: var(--green-mid); cursor: not-allowed; }
+
+    .modal-thanks {
+      display: none;
+      text-align: center;
+      padding: 16px 0 8px;
+    }
+
+    .thanks-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--bg-alt);
+      border: 2px solid var(--green-mid);
+      margin: 0 auto 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .thanks-icon svg { width: 28px; height: 28px; stroke: var(--green); }
+
+    .modal-thanks h3 { font-size: 1.2rem; font-weight: 700; color: var(--green-dark); margin-bottom: 10px; }
+    .modal-thanks p  { font-family: 'Basic', sans-serif; color: var(--text-soft); font-size: 0.95rem; }
+
+    .form-error {
+      display: none;
+      color: #b94a48;
+      font-family: 'Basic', sans-serif;
+      font-size: 0.88rem;
+      margin-top: 10px;
+      text-align: center;
+    }
+
+    /* ===== UNREGISTER MODAL LIST ===== */
+    .unreg-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .unreg-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border: 1.5px solid var(--green-mid);
+      border-radius: 12px;
+      padding: 12px 16px;
+      background: var(--bg);
+    }
+
+    .unreg-item-info { flex: 1; min-width: 0; }
+
+    .unreg-item-name {
+      font-weight: 600;
+      color: var(--green-dark);
+      font-size: 0.97rem;
+    }
+
+    .unreg-item-detail {
+      font-family: 'Basic', sans-serif;
+      font-size: 0.82rem;
+      color: var(--text-soft);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .btn-remove {
+      background: none;
+      border: 1.5px solid var(--green-mid);
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-family: 'Signika', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-soft);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+      flex-shrink: 0;
+    }
+
+    .btn-remove:hover { border-color: #b94a48; color: #b94a48; background: #fff5f5; }
+
+    .unreg-empty, .unreg-loading {
+      font-family: 'Basic', sans-serif;
+      color: var(--text-soft);
+      text-align: center;
+      padding: 24px 0 8px;
+      font-size: 0.95rem;
+    }
+
+    /* ===== REGISTRANTS TABLE ===== */
+    .reg-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 0.93rem;
+    }
+
+    .reg-table th {
+      background: var(--bg-alt);
+      color: var(--green-dark);
+      font-weight: 700;
+      padding: 10px 14px;
+      text-align: right;
+      border-bottom: 2px solid var(--green-mid);
+    }
+
+    .reg-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--green-mid);
+      color: var(--text);
+      font-family: 'Basic', sans-serif;
+    }
+
+    .reg-table tr:last-child td { border-bottom: none; }
+
+    .reg-table tr:hover td { background: var(--bg); }
+
+    .list-count {
+      font-family: 'Basic', sans-serif;
+      font-size: 0.85rem;
+      color: var(--text-soft);
+      text-align: center;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- ==================== HEADER ==================== -->
+<header>
+  <a href="https://www.mantrahome.co.il" target="_blank" rel="noopener" aria-label="מנטרה">
+    <img src="/static/assets/mantrahome_logo.avif" alt="מנטרה" class="logo-img">
+  </a>
+</header>
+
+
+<!-- ==================== HERO ==================== -->
+<section class="hero">
+  <h1 class="hero-title">שיעורי יוגה שבועיים</h1>
+  <p class="hero-sub">הצטרפו אלינו לתרגול קבוע &nbsp;|&nbsp; סטודיו מנטרה, עין כרמל</p>
+</section>
+
+
+<!-- ==================== CLASSES ==================== -->
+<div class="wrap-white">
+  <div class="inner">
+    <div class="section-head">
+      <h2 class="section-title">השיעורים הקרובים</h2>
+    </div>
+    <div class="classes-grid">
+
+      <!-- Sunday -->
+      <div class="class-card">
+        <img src="/static/assets/class_logo1.gif" class="class-logo" alt="שיעור יוגה ראשון">
+        <div class="class-day">יום ראשון</div>
+        <div class="class-date" id="date-sun"></div>
+        <div class="card-divider"></div>
+        <div class="class-time">18:30</div>
+        <button class="btn-reg" onclick="openRegModal(0, '18:30')">הרשמה</button>
+        <button class="btn-list" onclick="openListModal(0, '18:30')">הצג רשומים</button>
+      </div>
+
+      <!-- Tuesday -->
+      <div class="class-card">
+        <img src="/static/assets/class_logo2.gif" class="class-logo" alt="שיעור יוגה שלישי">
+        <div class="class-day">יום שלישי</div>
+        <div class="class-date" id="date-tue"></div>
+        <div class="card-divider"></div>
+        <div class="class-time">09:15</div>
+        <button class="btn-reg" onclick="openRegModal(2, '09:15')">הרשמה</button>
+        <button class="btn-list" onclick="openListModal(2, '09:15')">הצג רשומים</button>
+      </div>
+
+      <!-- Thursday -->
+      <div class="class-card">
+        <img src="/static/assets/class_logo3.gif" class="class-logo" alt="שיעור יוגה חמישי">
+        <div class="class-day">יום חמישי</div>
+        <div class="class-date" id="date-thu"></div>
+        <div class="card-divider"></div>
+        <div class="class-time">09:15</div>
+        <button class="btn-reg" onclick="openRegModal(4, '09:15')">הרשמה</button>
+        <button class="btn-list" onclick="openListModal(4, '09:15')">הצג רשומים</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ==================== UNREGISTER SECTION ==================== -->
+<div class="unreg-section">
+  <p class="unreg-label">רשומים לשיעור ורוצים לבטל?</p>
+  <button class="btn-unreg" onclick="openUnregModal()">ביטול הרשמה</button>
+</div>
+
+
+<!-- ==================== FOOTER ==================== -->
+<footer>
+  <a href="https://www.mantrahome.co.il" target="_blank" rel="noopener" aria-label="מנטרה">
+    <img src="/static/assets/mantrahome_logo.avif" alt="מנטרה" class="logo-img-footer">
+  </a>
+</footer>
+
+
+<!-- ==================== REGISTRATION MODAL ==================== -->
+<div class="modal-overlay" id="reg-overlay" onclick="if(event.target===this) closeRegModal()">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="reg-modal-title">
+    <button class="modal-close" onclick="closeRegModal()" aria-label="סגור">&times;</button>
+
+    <div id="reg-form-view">
+      <div class="modal-title" id="reg-modal-title">הרשמה לשיעור</div>
+      <div class="modal-subtitle" id="reg-modal-subtitle"></div>
+      <form id="reg-form" onsubmit="submitReg(event)" novalidate>
+        <div class="form-group">
+          <label for="inp-name">שם מלא</label>
+          <input type="text" id="inp-name" placeholder="השם שלך" required autocomplete="name">
+        </div>
+        <div class="form-group">
+          <label for="inp-phone">טלפון</label>
+          <input type="tel" id="inp-phone" placeholder="050-0000000" required autocomplete="tel">
+        </div>
+        <button type="submit" class="btn-submit" id="btn-submit-reg">שלח</button>
+        <div class="form-error" id="reg-error">אירעה שגיאה. נסו שוב.</div>
+      </form>
+    </div>
+
+    <div class="modal-thanks" id="reg-thanks-view">
+      <div class="thanks-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      </div>
+      <h3>נרשמת בהצלחה!</h3>
+      <p>נתראה בשיעור.</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- ==================== UNREGISTER MODAL ==================== -->
+<div class="modal-overlay" id="unreg-overlay" onclick="if(event.target===this) closeUnregModal()">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="unreg-modal-title">
+    <button class="modal-close" onclick="closeUnregModal()" aria-label="סגור">&times;</button>
+
+    <div class="modal-title" id="unreg-modal-title">ביטול הרשמה</div>
+    <div class="modal-subtitle">בחרו את השם שברצונכם להסיר</div>
+
+    <div id="unreg-loading" class="unreg-loading">טוען...</div>
+    <ul class="unreg-list" id="unreg-list" style="display:none;"></ul>
+    <div id="unreg-empty" class="unreg-empty" style="display:none;">אין רשומים כרגע.</div>
+  </div>
+</div>
+
+
+<!-- ==================== LIST MODAL ==================== -->
+<div class="modal-overlay" id="list-overlay" onclick="if(event.target===this) closeListModal()">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="list-modal-title" style="max-width:560px;">
+    <button class="modal-close" onclick="closeListModal()" aria-label="סגור">&times;</button>
+    <div class="modal-title" id="list-modal-title">רשומים לשיעור</div>
+    <div class="modal-subtitle" id="list-modal-subtitle"></div>
+    <div id="list-loading" class="unreg-loading">טוען...</div>
+    <div id="list-count" class="list-count" style="display:none;"></div>
+    <div id="list-table-wrap" style="display:none; overflow-x:auto;">
+      <table class="reg-table">
+        <thead>
+          <tr><th>#</th><th>שם</th><th>טלפון</th></tr>
+        </thead>
+        <tbody id="list-tbody"></tbody>
+      </table>
+    </div>
+    <div id="list-empty" class="unreg-empty" style="display:none;">אין רשומים לשיעור זה.</div>
+  </div>
+</div>
+
+
+<!-- ==================== JS ==================== -->
+<script>
+  const HE_DAYS   = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+  const HE_MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+
+  function nextWeekday(dayIndex) {
+    const now = new Date();
+    let diff  = dayIndex - now.getDay();
+    if (diff <= 0) diff += 7;
+    const d   = new Date(now);
+    d.setDate(now.getDate() + diff);
+    return d;
+  }
+
+  function formatDateHe(d) {
+    return d.getDate() + ' ב' + HE_MONTHS[d.getMonth()] + ' ' + d.getFullYear();
+  }
+
+  function buildClassDateLabel(dayIndex, time) {
+    return 'יום ' + HE_DAYS[dayIndex] + ', ' + formatDateHe(nextWeekday(dayIndex)) + ' | ' + time;
+  }
+
+  document.getElementById('date-sun').textContent = formatDateHe(nextWeekday(0));
+  document.getElementById('date-tue').textContent = formatDateHe(nextWeekday(2));
+  document.getElementById('date-thu').textContent = formatDateHe(nextWeekday(4));
+
+  let currentClassDate = '';
+
+  function openRegModal(dayIndex, time) {
+    currentClassDate = buildClassDateLabel(dayIndex, time);
+    document.getElementById('reg-modal-subtitle').textContent = currentClassDate;
+    document.getElementById('reg-form-view').style.display   = '';
+    document.getElementById('reg-thanks-view').style.display = 'none';
+    document.getElementById('reg-error').style.display       = 'none';
+    document.getElementById('reg-form').reset();
+    document.getElementById('reg-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => document.getElementById('inp-name').focus(), 50);
+  }
+
+  function closeRegModal() {
+    document.getElementById('reg-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  async function submitReg(e) {
+    e.preventDefault();
+    const name  = document.getElementById('inp-name').value.trim();
+    const phone = document.getElementById('inp-phone').value.trim();
+    if (!name || !phone) return;
+
+    const btn = document.getElementById('btn-submit-reg');
+    btn.disabled = true;
+    document.getElementById('reg-error').style.display = 'none';
+
+    try {
+      const res = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, phone, class_date: currentClassDate })
+      });
+      if (!res.ok) throw new Error();
+      document.getElementById('reg-form-view').style.display   = 'none';
+      document.getElementById('reg-thanks-view').style.display = 'block';
+      setTimeout(closeRegModal, 2800);
+    } catch {
+      document.getElementById('reg-error').style.display = 'block';
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function openUnregModal() {
+    document.getElementById('unreg-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    await loadRegistrations();
+  }
+
+  function closeUnregModal() {
+    document.getElementById('unreg-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  async function loadRegistrations() {
+    const loadingEl = document.getElementById('unreg-loading');
+    const listEl    = document.getElementById('unreg-list');
+    const emptyEl   = document.getElementById('unreg-empty');
+
+    loadingEl.style.display = '';
+    listEl.style.display    = 'none';
+    emptyEl.style.display   = 'none';
+    listEl.innerHTML        = '';
+
+    try {
+      const res  = await fetch('/api/registrations');
+      const data = await res.json();
+      loadingEl.style.display = 'none';
+
+      if (!data.length) { emptyEl.style.display = ''; return; }
+
+      listEl.style.display = '';
+      data.forEach(reg => {
+        const li = document.createElement('li');
+        li.className = 'unreg-item';
+        li.innerHTML =
+          '<div class="unreg-item-info">' +
+            '<div class="unreg-item-name">'   + escHtml(reg.name)       + '</div>' +
+            '<div class="unreg-item-detail">' + escHtml(reg.phone) + ' &nbsp;|&nbsp; ' + escHtml(reg.class_date) + '</div>' +
+          '</div>' +
+          '<button class="btn-remove" onclick="removeReg(' + reg.id + ', this)">הסר</button>';
+        listEl.appendChild(li);
+      });
+    } catch {
+      loadingEl.textContent = 'לא ניתן לטעון נתונים.';
+    }
+  }
+
+  async function removeReg(id, btn) {
+    btn.disabled = true;
+    try {
+      const res = await fetch('/api/unregister/' + id, { method: 'DELETE' });
+      if (!res.ok) throw new Error();
+      btn.closest('.unreg-item').remove();
+      if (!document.getElementById('unreg-list').children.length) {
+        document.getElementById('unreg-list').style.display  = 'none';
+        document.getElementById('unreg-empty').style.display = '';
+      }
+    } catch {
+      btn.disabled = false;
+      alert('אירעה שגיאה. נסו שוב.');
+    }
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { closeRegModal(); closeUnregModal(); closeListModal(); }
+  });
+
+  /* ---- List modal ---- */
+  let currentListLabel = '';
+
+  async function openListModal(dayIndex, time) {
+    currentListLabel = buildClassDateLabel(dayIndex, time);
+    document.getElementById('list-modal-subtitle').textContent = currentListLabel;
+    document.getElementById('list-loading').style.display     = '';
+    document.getElementById('list-table-wrap').style.display  = 'none';
+    document.getElementById('list-empty').style.display       = 'none';
+    document.getElementById('list-count').style.display       = 'none';
+    document.getElementById('list-tbody').innerHTML           = '';
+    document.getElementById('list-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+
+    try {
+      const res  = await fetch('/api/registrations');
+      const all  = await res.json();
+      const rows = all.filter(r => r.class_date === currentListLabel);
+      document.getElementById('list-loading').style.display = 'none';
+
+      if (!rows.length) {
+        document.getElementById('list-empty').style.display = '';
+        return;
+      }
+
+      const tbody = document.getElementById('list-tbody');
+      rows.forEach((r, i) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML =
+          '<td>' + (i + 1) + '</td>' +
+          '<td>' + escHtml(r.name)  + '</td>' +
+          '<td>' + escHtml(r.phone) + '</td>';
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('list-count').textContent    = rows.length + ' רשומים';
+      document.getElementById('list-count').style.display  = '';
+      document.getElementById('list-table-wrap').style.display = '';
+    } catch {
+      document.getElementById('list-loading').textContent = 'לא ניתן לטעון נתונים.';
+    }
+  }
+
+  function closeListModal() {
+    document.getElementById('list-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+</script>
+
+</body>
+</html>
