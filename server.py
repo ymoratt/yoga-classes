@@ -389,6 +389,29 @@ def admin_update_user(user_id):
         con.close()
 
 
+@app.route('/admin/api/cancel-class', methods=['POST'])
+@admin_required
+def admin_cancel_class():
+    data       = request.get_json(silent=True) or {}
+    class_date = str(data.get('class_date', '')).strip()
+    if not class_date:
+        return jsonify({'error': 'שדה חסר'}), 400
+    con = get_db()
+    try:
+        rows = con.execute(
+            'SELECT id, name, phone FROM registrations WHERE class_date = ?',
+            (class_date,)
+        ).fetchall()
+        cancelled = [dict(r) for r in rows]
+        for row in rows:
+            con.execute('DELETE FROM registrations WHERE id = ?', (row['id'],))
+            decrement_user(con, row['name'], row['phone'])
+        con.commit()
+        return jsonify({'ok': True, 'cancelled': cancelled})
+    finally:
+        con.close()
+
+
 @app.route('/admin/api/users/<int:user_id>', methods=['DELETE'])
 @admin_required
 def admin_delete_user(user_id):

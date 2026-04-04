@@ -140,6 +140,44 @@
       margin-top: 10px; display: none; text-align: center;
     }
 
+    /* ── Classes section ── */
+    .classes-list { margin-bottom: 52px; }
+    .class-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 18px; background: var(--white); border-radius: 14px;
+      border: 1.5px solid var(--green-mid); margin-bottom: 10px;
+    }
+    .class-info { display: flex; align-items: center; gap: 14px; }
+    .class-date-label { font-weight: 600; color: var(--green-dark); font-size: 0.97rem; }
+    .btn-cancel-class {
+      background: none; border: 1.5px solid #f5c6c6; border-radius: 8px;
+      padding: 7px 18px; font-family: 'Signika', sans-serif;
+      font-size: 0.85rem; font-weight: 600; color: #b94a48;
+      cursor: pointer; transition: border-color 0.15s, background 0.15s;
+      white-space: nowrap;
+    }
+    .btn-cancel-class:hover { background: #fff0f0; border-color: #b94a48; }
+
+    /* ── WhatsApp links in cancel result ── */
+    .wa-link {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 16px; background: #e8f5e2;
+      border: 1.5px solid var(--green-mid); border-radius: 10px;
+      color: var(--green-dark); text-decoration: none; font-weight: 600;
+      margin-bottom: 8px; transition: background 0.15s;
+      font-size: 0.93rem;
+    }
+    .wa-link:hover { background: var(--green-mid); }
+    .wa-icon { font-size: 1.2rem; }
+    .cancel-info {
+      font-family: 'Basic', sans-serif; color: var(--text-soft);
+      font-size: 0.9rem; margin-bottom: 20px; line-height: 1.6;
+    }
+    .cancel-done-title {
+      font-weight: 700; color: var(--green-dark); margin-bottom: 14px; font-size: 0.97rem;
+    }
+    #cancel-wa-list { max-height: 280px; overflow-y: auto; }
+
     /* ── Idle warning banner ── */
     #idle-warning {
       display: none;
@@ -172,6 +210,12 @@
 </header>
 
 <div class="page">
+
+  <!-- ── Classes ── -->
+  <h2 class="section-title">שיעורים</h2>
+  <div class="classes-list" id="classes-list">
+    <div class="empty-msg">טוען...</div>
+  </div>
 
   <!-- ── Registrations ── -->
   <h2 class="section-title">הרשמות</h2>
@@ -235,6 +279,37 @@
   </div>
 </div>
 
+<!-- ── Cancel Class Modal ── -->
+<div class="modal-overlay" id="cancel-modal" onclick="if(event.target===this)closeModal('cancel-modal')">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('cancel-modal')">&times;</button>
+    <div class="modal-title">ביטול שיעור</div>
+
+    <!-- confirmation view -->
+    <div id="cancel-confirm-view">
+      <div class="cancel-info">
+        האם לבטל את השיעור <strong id="cancel-class-label"></strong>?<br>
+        לאחר האישור יבוטלו כל ההרשמות (<strong id="cancel-registrant-count"></strong> נרשמים)
+        ותישלח הודעת ביטול ב-WhatsApp לכל אחד מהם.
+      </div>
+      <div class="modal-actions">
+        <button class="btn-del" id="btn-confirm-cancel" onclick="confirmCancelClass()">כן, בטל שיעור</button>
+        <button class="btn-cancel" onclick="closeModal('cancel-modal')">חזרה</button>
+      </div>
+      <div class="modal-error" id="cancel-modal-err"></div>
+    </div>
+
+    <!-- result view -->
+    <div id="cancel-done-view" style="display:none">
+      <div class="cancel-done-title">השיעור בוטל. לחצו על כל נרשם לשליחת הודעה ב-WhatsApp:</div>
+      <div id="cancel-wa-list"></div>
+      <div class="modal-actions" style="margin-top:16px">
+        <button class="btn-cancel" style="flex:0 0 auto;padding:10px 28px" onclick="closeModal('cancel-modal')">סגור</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ── Idle warning ── -->
 <div id="idle-warning">
   יציאה אוטומטית בעוד <strong id="idle-countdown">60</strong> שניות — לחצו כדי להישאר
@@ -244,7 +319,7 @@
   /* ── helpers ── */
   function openModal(id)  { document.getElementById(id).classList.add('open');    document.body.style.overflow='hidden'; }
   function closeModal(id) { document.getElementById(id).classList.remove('open'); document.body.style.overflow=''; }
-  document.addEventListener('keydown', e => { if(e.key==='Escape'){ closeModal('reg-modal'); closeModal('usr-modal'); } });
+  document.addEventListener('keydown', e => { if(e.key==='Escape'){ closeModal('reg-modal'); closeModal('usr-modal'); closeModal('cancel-modal'); } });
 
   function fmtDate(ts) {
     if (!ts) return '';
@@ -258,6 +333,7 @@
   async function loadRegs() {
     const res  = await fetch('/admin/api/registrations');
     regs       = await res.json();
+    renderClasses();
     const tbody = document.getElementById('reg-tbody');
     if (!regs.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty-msg">אין הרשמות.</td></tr>'; return; }
     tbody.innerHTML = regs.map((r, i) => `
@@ -304,6 +380,91 @@
     if (!confirm('למחוק הרשמה זו?')) return;
     await fetch(`/admin/api/registrations/${id}`, { method: 'DELETE' });
     loadRegs(); loadUsers();
+  }
+
+  /* ── Classes ── */
+  function renderClasses() {
+    const classMap = {};
+    regs.forEach(r => {
+      if (!classMap[r.class_date]) classMap[r.class_date] = [];
+      classMap[r.class_date].push(r);
+    });
+    const dates = Object.keys(classMap).sort();
+    const container = document.getElementById('classes-list');
+    if (!dates.length) {
+      container.innerHTML = '<div class="empty-msg">אין שיעורים עם הרשמות.</div>';
+      return;
+    }
+    container.innerHTML = dates.map(date => `
+      <div class="class-row">
+        <div class="class-info">
+          <span class="class-date-label">${esc(date)}</span>
+          <span class="badge-count">${classMap[date].length} רשומים</span>
+        </div>
+        <button class="btn-cancel-class" data-date="${esc(date)}">ביטול שיעור</button>
+      </div>`).join('');
+  }
+
+  document.getElementById('classes-list').addEventListener('click', e => {
+    const btn = e.target.closest('.btn-cancel-class');
+    if (btn) openCancelModal(btn.dataset.date);
+  });
+
+  let cancelClassDate = null;
+
+  function openCancelModal(classDate) {
+    cancelClassDate = classDate;
+    const count = regs.filter(r => r.class_date === classDate).length;
+    document.getElementById('cancel-class-label').textContent = classDate;
+    document.getElementById('cancel-registrant-count').textContent = count;
+    document.getElementById('cancel-confirm-view').style.display = '';
+    document.getElementById('cancel-done-view').style.display    = 'none';
+    document.getElementById('cancel-modal-err').style.display    = 'none';
+    document.getElementById('btn-confirm-cancel').disabled       = false;
+    openModal('cancel-modal');
+  }
+
+  async function confirmCancelClass() {
+    const btn = document.getElementById('btn-confirm-cancel');
+    btn.disabled = true;
+    document.getElementById('cancel-modal-err').style.display = 'none';
+    try {
+      const res = await fetch('/admin/api/cancel-class', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ class_date: cancelClassDate })
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        const errEl = document.getElementById('cancel-modal-err');
+        errEl.textContent = d.error || 'שגיאה';
+        errEl.style.display = 'block';
+        btn.disabled = false;
+        return;
+      }
+      const data = await res.json();
+      const waList = document.getElementById('cancel-wa-list');
+      if (data.cancelled.length) {
+        waList.innerHTML = data.cancelled.map(r => {
+          const phone = r.phone.replace('+', '');
+          const msg   = encodeURIComponent(`שלום ${r.name}, שיעור היוגה ב-${cancelClassDate} בוטל. מצטערים על אי הנוחות.\nSat Nam`);
+          return `<a class="wa-link" href="https://wa.me/${phone}?text=${msg}" target="_blank">
+            <span class="wa-icon">💬</span>${esc(r.name)} — ${esc(r.phone)}
+          </a>`;
+        }).join('');
+      } else {
+        waList.innerHTML = '<div class="empty-msg">לא היו נרשמים לשיעור זה.</div>';
+      }
+      document.getElementById('cancel-confirm-view').style.display = 'none';
+      document.getElementById('cancel-done-view').style.display    = '';
+      loadRegs();
+      loadUsers();
+    } catch {
+      const errEl = document.getElementById('cancel-modal-err');
+      errEl.textContent = 'שגיאת תקשורת. נסו שוב.';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+    }
   }
 
   /* ── Users ── */
