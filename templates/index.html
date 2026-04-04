@@ -405,6 +405,28 @@
 
     input.invalid { border-color: #b94a48 !important; }
 
+    .name-hint {
+      display: none;
+      font-family: 'Basic', sans-serif;
+      font-size: 0.85rem;
+      margin-top: 6px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      line-height: 1.4;
+    }
+    .name-hint.known {
+      background: var(--bg-alt);
+      color: var(--green-dark);
+      border: 1px solid var(--green-mid);
+      cursor: pointer;
+    }
+    .name-hint.known:hover { background: #d4ebd7; }
+    .name-hint.new-user {
+      background: #fdf8ec;
+      color: #7a6120;
+      border: 1px solid #e8d98a;
+    }
+
     /* ===== UNREGISTER MODAL LIST ===== */
     .unreg-list {
       list-style: none;
@@ -591,8 +613,9 @@
       <form id="reg-form" onsubmit="submitReg(event)" novalidate>
         <div class="form-group">
           <label for="inp-name">שם מלא</label>
-          <input type="text" id="inp-name" placeholder="השם שלך" required autocomplete="name">
+          <input type="text" id="inp-name" placeholder="השם שלך" required autocomplete="name" oninput="onNameInput()">
           <span class="field-error" id="err-name"></span>
+          <div class="name-hint" id="name-hint"></div>
         </div>
         <div class="form-group">
           <label for="inp-phone">טלפון</label>
@@ -612,6 +635,7 @@
       </div>
       <h3>נרשמת בהצלחה!</h3>
       <p>נתראה בשיעור.</p>
+      <p id="reg-admissions-notice" style="display:none; margin-top:12px; color:#b94a48; font-weight:600;"></p>
     </div>
   </div>
 </div>
@@ -680,8 +704,9 @@
   document.getElementById('date-thu').textContent = formatDateHe(nextWeekday(4));
 
   let currentClassDate = '';
+  let allUsers = [];
 
-  function openRegModal(dayIndex, time) {
+  async function openRegModal(dayIndex, time) {
     currentClassDate = buildClassDateLabel(dayIndex, time);
     document.getElementById('reg-modal-subtitle').textContent = currentClassDate;
     document.getElementById('reg-form-view').style.display   = '';
@@ -690,9 +715,57 @@
     document.getElementById('reg-form').reset();
     setFieldError('inp-name',  'err-name',  '');
     setFieldError('inp-phone', 'err-phone', '');
+    clearNameHint();
     document.getElementById('reg-overlay').classList.add('open');
     document.body.style.overflow = 'hidden';
     setTimeout(() => document.getElementById('inp-name').focus(), 50);
+    try {
+      const res = await fetch('/api/users');
+      allUsers = await res.json();
+    } catch { allUsers = []; }
+  }
+
+  function normalizeNameForLookup(name) {
+    const isHebrew = [...name].some(c => {
+      const cp = c.charCodeAt(0);
+      return (cp >= 0x0590 && cp <= 0x05FF) || (cp >= 0xFB1D && cp <= 0xFB4F);
+    });
+    return isHebrew ? name.trim() : name.trim().toLowerCase();
+  }
+
+  function clearNameHint() {
+    const hint = document.getElementById('name-hint');
+    hint.className = 'name-hint';
+    hint.textContent = '';
+    hint.style.display = 'none';
+    hint.onclick = null;
+  }
+
+  function onNameInput() {
+    const name = document.getElementById('inp-name').value.trim();
+    const hint = document.getElementById('name-hint');
+    if (name.length < 2) { clearNameHint(); return; }
+
+    const normInput = normalizeNameForLookup(name);
+    const match = allUsers.find(u => normalizeNameForLookup(u.name) === normInput);
+
+    if (match) {
+      hint.className = 'name-hint known';
+      hint.textContent = 'מספר שמור: ' + match.phone + ' — לחץ/י למילוי אוטומטי';
+      hint.style.display = 'block';
+      hint.onclick = () => {
+        document.getElementById('inp-phone').value = match.phone;
+        setFieldError('inp-phone', 'err-phone', '');
+        hint.className = 'name-hint new-user';
+        hint.textContent = 'מספר הטלפון מולא אוטומטית ✓';
+        hint.onclick = null;
+      };
+    } else {
+      hint.className = 'name-hint new-user';
+      hint.textContent = 'נרשמ/ת בפעם הראשונה?';
+      hint.style.display = 'block';
+      hint.onclick = null;
+    }
   }
 
   function closeRegModal() {
@@ -750,9 +823,27 @@
         errEl.style.display = 'block';
         return;
       }
+      const body = await res.json().catch(() => ({}));
       document.getElementById('reg-form-view').style.display   = 'none';
-      document.getElementById('reg-thanks-view').style.display = 'block';
-      setTimeout(closeRegModal, 2800);
+      const thanksEl = document.getElementById('reg-thanks-view');
+      const noticeEl = document.getElementById('reg-admissions-notice');
+      noticeEl.style.display = 'none';
+      noticeEl.textContent   = '';
+      if (body.admissions != null) {
+        noticeEl.style.display = 'block';
+        if (body.admissions < 1) {
+          noticeEl.textContent = 'אין כרטיסיה? נגמרו הניקובים....';
+          noticeEl.style.color = '#b94a48';
+        } else if (body.admissions === 1) {
+          noticeEl.textContent = 'זהו הניקוב האחרון...';
+          noticeEl.style.color = '#b94a48';
+        } else {
+          noticeEl.textContent = 'נותרו עוד ' + body.admissions + ' ניקובים';
+          noticeEl.style.color = '';
+        }
+      }
+      thanksEl.style.display = 'block';
+      setTimeout(closeRegModal, body.admissions != null ? 4500 : 2800);
     } catch {
       const errEl = document.getElementById('reg-error');
       errEl.textContent = 'אירעה שגיאה. נסו שוב.';

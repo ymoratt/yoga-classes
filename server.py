@@ -108,6 +108,10 @@ def init_db():
             ''', (key, d['name'], d['phone'], d['lesson_count'],
                   d.get('first_seen'), d.get('last_seen')))
         con.execute('DROP TABLE users_old')
+    # Migration: add admissions column if missing
+    cols = {row[1] for row in con.execute('PRAGMA table_info(users)')}
+    if 'admissions' not in cols:
+        con.execute('ALTER TABLE users ADD COLUMN admissions INTEGER NOT NULL DEFAULT 0')
     con.commit()
     con.close()
 
@@ -145,10 +149,11 @@ def upsert_user(con, name, phone):
     phone    = normalize_phone(phone)
     user_key = name + phone
     con.execute('''
-        INSERT INTO users (user_key, name, phone, lesson_count, last_seen)
-        VALUES (?, ?, ?, 1, CURRENT_TIMESTAMP)
+        INSERT INTO users (user_key, name, phone, lesson_count, admissions, last_seen)
+        VALUES (?, ?, ?, 1, 0, CURRENT_TIMESTAMP)
         ON CONFLICT(user_key) DO UPDATE SET
             lesson_count = lesson_count + 1,
+            admissions   = admissions - 1,
             last_seen    = CURRENT_TIMESTAMP
     ''', (user_key, name, phone))
 
@@ -156,11 +161,7 @@ def upsert_user(con, name, phone):
 def decrement_user(con, name, phone):
     user_key = make_user_key(name, phone)
     con.execute(
-        'UPDATE users SET lesson_count = lesson_count - 1 WHERE user_key = ?',
-        (user_key,)
-    )
-    con.execute(
-        'DELETE FROM users WHERE user_key = ? AND lesson_count <= 0',
+        'UPDATE users SET lesson_count = lesson_count - 1, admissions = admissions + 1 WHERE user_key = ?',
         (user_key,)
     )
 
@@ -218,8 +219,13 @@ def register():
             (name, phone, class_date)
         )
         upsert_user(con, name, phone)
+        user_key = make_user_key(name, phone)
+        row = con.execute(
+            'SELECT admissions FROM users WHERE user_key = ?', (user_key,)
+        ).fetchone()
+        admissions = row['admissions'] if row else None
         con.commit()
-        return jsonify({'ok': True}), 201
+        return jsonify({'ok': True, 'admissions': admissions}), 201
     finally:
         con.close()
 
@@ -363,11 +369,12 @@ def admin_get_users():
 @app.route('/admin/api/users/<int:user_id>', methods=['PUT'])
 @admin_required
 def admin_update_user(user_id):
-    data  = request.get_json(silent=True) or {}
-    name  = str(data.get('name',         '')).strip()
-    phone = str(data.get('phone',        '')).strip()
-    count = data.get('lesson_count')
-    if not name or not phone or count is None:
+    data       = request.get_json(silent=True) or {}
+    name       = str(data.get('name',         '')).strip()
+    phone      = str(data.get('phone',        '')).strip()
+    count      = data.get('lesson_count')
+    admissions = data.get('admissions')
+    if not name or not phone or count is None or admissions is None:
         return jsonify({'error': 'שדות חסרים'}), 400
     if not valid_name(name):
         return jsonify({'error': 'השם יכול להכיל אותיות בעברית או באנגלית בלבד'}), 400
@@ -380,8 +387,8 @@ def admin_update_user(user_id):
         if conflict:
             return jsonify({'error': 'משתמש עם מפתח זה כבר קיים'}), 409
         con.execute(
-            'UPDATE users SET user_key=?, name=?, phone=?, lesson_count=? WHERE id=?',
-            (new_key, normalize_name(name), normalize_phone(phone), int(count), user_id)
+            'UPDATE users SET user_key=?, name=?, phone=?, lesson_count=?, admissions=? WHERE id=?',
+            (new_key, normalize_name(name), normalize_phone(phone), int(count), int(admissions), user_id)
         )
         con.commit()
         return jsonify({'ok': True})

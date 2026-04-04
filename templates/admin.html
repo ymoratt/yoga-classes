@@ -236,7 +236,7 @@
     <table id="usr-table">
       <thead>
         <tr>
-          <th>#</th><th>שם</th><th>טלפון</th><th>שיעורים</th><th>ראשון</th><th>אחרון</th><th>פעולות</th>
+          <th>#</th><th>שם</th><th>טלפון</th><th>שיעורים</th><th>ניקובים</th><th>ראשון</th><th>אחרון</th><th>פעולות</th>
         </tr>
       </thead>
       <tbody id="usr-tbody"><tr><td colspan="7" class="empty-msg">טוען...</td></tr></tbody>
@@ -271,6 +271,7 @@
     <div class="form-group"><label>שם</label><input type="text" id="edit-usr-name"></div>
     <div class="form-group"><label>טלפון</label><input type="text" id="edit-usr-phone"></div>
     <div class="form-group"><label>מספר שיעורים</label><input type="number" id="edit-usr-count" min="0"></div>
+    <div class="form-group"><label>ניקובים</label><input type="number" id="edit-usr-admissions"></div>
     <div class="modal-actions">
       <button class="btn-save" onclick="saveUser()">שמור</button>
       <button class="btn-cancel" onclick="closeModal('usr-modal')">ביטול</button>
@@ -447,7 +448,7 @@
       if (data.cancelled.length) {
         waList.innerHTML = data.cancelled.map(r => {
           const phone = r.phone.replace('+', '');
-          const msg   = encodeURIComponent(`שלום ${r.name}, שיעור היוגה ב-${cancelClassDate} בוטל. מצטערים על אי הנוחות.\nSat Nam`);
+          const msg   = encodeURIComponent(`סאט נאמ, ${r.name} \nשיעור היוגה ביום ${cancelClassDate} בוטל.\n\nעדכונים נוספים בקבוצה.`);
           return `<a class="wa-link" href="https://wa.me/${phone}?text=${msg}" target="_blank">
             <span class="wa-icon">💬</span>${esc(r.name)} — ${esc(r.phone)}
           </a>`;
@@ -474,13 +475,14 @@
     const res   = await fetch('/admin/api/users');
     users       = await res.json();
     const tbody = document.getElementById('usr-tbody');
-    if (!users.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty-msg">אין משתמשים.</td></tr>'; return; }
+    if (!users.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty-msg">אין משתמשים.</td></tr>'; return; }
     tbody.innerHTML = users.map((u, i) => `
       <tr>
         <td>${i+1}</td>
         <td>${esc(u.name)}</td>
         <td>${esc(u.phone)}</td>
         <td><span class="badge-count">${u.lesson_count}</span></td>
+        <td><span class="badge-count">${u.admissions ?? 0}</span></td>
         <td>${fmtDate(u.first_seen)}</td>
         <td>${fmtDate(u.last_seen)}</td>
         <td><div class="actions">
@@ -492,25 +494,27 @@
 
   function editUser(id) {
     const u = users.find(x => x.id === id);
-    document.getElementById('edit-usr-id').value     = u.id;
-    document.getElementById('edit-usr-name').value   = u.name;
-    document.getElementById('edit-usr-phone').value  = u.phone;
-    document.getElementById('edit-usr-count').value  = u.lesson_count;
+    document.getElementById('edit-usr-id').value          = u.id;
+    document.getElementById('edit-usr-name').value        = u.name;
+    document.getElementById('edit-usr-phone').value       = u.phone;
+    document.getElementById('edit-usr-count').value       = u.lesson_count;
+    document.getElementById('edit-usr-admissions').value  = u.admissions ?? 0;
     document.getElementById('usr-modal-err').style.display = 'none';
     openModal('usr-modal');
   }
 
   async function saveUser() {
     const id    = document.getElementById('edit-usr-id').value;
-    const name  = document.getElementById('edit-usr-name').value.trim();
-    const phone = document.getElementById('edit-usr-phone').value.trim();
-    const count = document.getElementById('edit-usr-count').value;
-    const errEl = document.getElementById('usr-modal-err');
+    const name       = document.getElementById('edit-usr-name').value.trim();
+    const phone      = document.getElementById('edit-usr-phone').value.trim();
+    const count      = document.getElementById('edit-usr-count').value;
+    const admissions = document.getElementById('edit-usr-admissions').value;
+    const errEl      = document.getElementById('usr-modal-err');
     errEl.style.display = 'none';
     const res = await fetch(`/admin/api/users/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, phone, lesson_count: count })
+      body: JSON.stringify({ name, phone, lesson_count: count, admissions })
     });
     if (res.ok) { closeModal('usr-modal'); loadUsers(); }
     else { const d = await res.json(); errEl.textContent = d.error || 'שגיאה'; errEl.style.display='block'; }
