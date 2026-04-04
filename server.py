@@ -207,6 +207,12 @@ def register():
         return jsonify({'error': 'השם יכול להכיל אותיות בעברית או באנגלית בלבד'}), 400
     con = get_db()
     try:
+        already = con.execute(
+            'SELECT 1 FROM registrations WHERE class_date = ? AND phone = ?',
+            (class_date, normalize_phone(phone))
+        ).fetchone()
+        if already:
+            return jsonify({'error': 'כבר רשומ/ה לשיעור זה'}), 409
         con.execute(
             'INSERT INTO registrations (name, phone, class_date) VALUES (?, ?, ?)',
             (name, phone, class_date)

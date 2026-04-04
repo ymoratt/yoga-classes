@@ -743,12 +743,20 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, phone, class_date: currentClassDate })
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        const errEl = document.getElementById('reg-error');
+        errEl.textContent = body.error || 'אירעה שגיאה. נסו שוב.';
+        errEl.style.display = 'block';
+        return;
+      }
       document.getElementById('reg-form-view').style.display   = 'none';
       document.getElementById('reg-thanks-view').style.display = 'block';
       setTimeout(closeRegModal, 2800);
     } catch {
-      document.getElementById('reg-error').style.display = 'block';
+      const errEl = document.getElementById('reg-error');
+      errEl.textContent = 'אירעה שגיאה. נסו שוב.';
+      errEl.style.display = 'block';
     } finally {
       btn.disabled = false;
     }
