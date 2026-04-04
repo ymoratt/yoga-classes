@@ -139,6 +139,29 @@
       color: #b94a48; font-family: 'Basic', sans-serif; font-size: 0.87rem;
       margin-top: 10px; display: none; text-align: center;
     }
+
+    /* ── Idle warning banner ── */
+    #idle-warning {
+      display: none;
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 999;
+      background: #fff8e1;
+      border: 1.5px solid #f5c842;
+      border-radius: 50px;
+      padding: 12px 28px;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.12);
+      font-family: 'Basic', sans-serif;
+      font-size: 0.93rem;
+      color: #7a5c00;
+      white-space: nowrap;
+    }
+
+    #idle-warning strong { font-family: 'Signika', sans-serif; font-size: 1.05rem; color: #b94a48; }
   </style>
 </head>
 <body>
@@ -210,6 +233,11 @@
     </div>
     <div class="modal-error" id="usr-modal-err"></div>
   </div>
+</div>
+
+<!-- ── Idle warning ── -->
+<div id="idle-warning">
+  יציאה אוטומטית בעוד <strong id="idle-countdown">60</strong> שניות — לחצו כדי להישאר
 </div>
 
 <script>
@@ -341,6 +369,43 @@
   /* ── Init ── */
   loadRegs();
   loadUsers();
+
+  /* ── Inactivity auto-logout (5 minutes) ── */
+  const TIMEOUT_MS = 5 * 60 * 1000;
+  let logoutTimer;
+  let countdownInterval;
+  let idleStart;
+
+  const warningEl = document.getElementById('idle-warning');
+  const countdownEl = document.getElementById('idle-countdown');
+
+  function startLogoutTimer() {
+    clearTimeout(logoutTimer);
+    clearInterval(countdownInterval);
+    idleStart = Date.now();
+    warningEl.style.display = 'none';
+
+    logoutTimer = setTimeout(() => {
+      window.location.href = '/admin/logout';
+    }, TIMEOUT_MS);
+
+    // Check every second whether we're inside the last 60 seconds
+    countdownInterval = setInterval(() => {
+      const elapsed  = Date.now() - idleStart;
+      const remaining = Math.ceil((TIMEOUT_MS - elapsed) / 1000);
+      if (remaining <= 60) {
+        warningEl.style.display = 'flex';
+        countdownEl.textContent = remaining;
+      }
+      if (remaining <= 0) clearInterval(countdownInterval);
+    }, 1000);
+  }
+
+  ['mousedown', 'keydown', 'scroll', 'touchstart', 'click'].forEach(evt =>
+    document.addEventListener(evt, startLogoutTimer, { passive: true })
+  );
+
+  startLogoutTimer();
 </script>
 </body>
 </html>
