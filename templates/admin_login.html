@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>כניסת מנהל | מנטרה</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Signika:wght@400;600;700&family=Basic&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f4faf2; --bg-alt: #e8f5e2; --white: #ffffff;
+      --green-mid: #c3dfc7; --green: #5a8a5e; --green-dark: #2e5d34;
+      --text: #2c3e2d; --text-soft: #5a6e5b;
+    }
+    html { font-family: 'Signika', Arial, sans-serif; }
+    body {
+      background: linear-gradient(155deg, #d6ead8 0%, #eaf5eb 55%, #f4faf2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      background: var(--white);
+      border-radius: 26px;
+      padding: 52px 44px 44px;
+      max-width: 400px;
+      width: 100%;
+      box-shadow: 0 24px 64px rgba(44,62,45,0.16);
+    }
+    .card-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--green-dark);
+      text-align: center;
+      margin-bottom: 6px;
+    }
+    .card-sub {
+      font-family: 'Basic', sans-serif;
+      font-size: 0.9rem;
+      color: var(--text-soft);
+      text-align: center;
+      margin-bottom: 34px;
+    }
+    .form-group { margin-bottom: 18px; }
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      color: var(--green-dark);
+      margin-bottom: 6px;
+      font-size: 0.93rem;
+    }
+    .form-group input {
+      width: 100%;
+      border: 1.5px solid var(--green-mid);
+      border-radius: 11px;
+      padding: 12px 16px;
+      font-family: 'Signika', sans-serif;
+      font-size: 1rem;
+      color: var(--text);
+      background: var(--bg);
+      outline: none;
+      direction: ltr;
+      transition: border-color 0.18s;
+    }
+    .form-group input:focus { border-color: var(--green); }
+    .btn-login {
+      width: 100%;
+      background: var(--green);
+      color: var(--white);
+      border: none;
+      padding: 14px;
+      font-family: 'Signika', sans-serif;
+      font-size: 1.05rem;
+      font-weight: 700;
+      border-radius: 11px;
+      cursor: pointer;
+      margin-top: 6px;
+      transition: background 0.2s;
+    }
+    .btn-login:hover { background: #3d6b41; }
+    .error {
+      background: #fff0f0;
+      border: 1px solid #f5c6c6;
+      border-radius: 10px;
+      padding: 10px 16px;
+      color: #b94a48;
+      font-family: 'Basic', sans-serif;
+      font-size: 0.9rem;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="card-title">כניסת מנהל</div>
+    <div class="card-sub">מנטרה — ניהול שיעורי יוגה</div>
+    {% if error %}
+    <div class="error">{{ error }}</div>
+    {% endif %}
+    <form method="post" autocomplete="off">
+      <div class="form-group">
+        <label for="username">שם משתמש</label>
+        <input type="text" id="username" name="username" required autofocus>
+      </div>
+      <div class="form-group">
+        <label for="password">סיסמה</label>
+        <input type="password" id="password" name="password" required>
+      </div>
+      <button type="submit" class="btn-login">כניסה</button>
+    </form>
+  </div>
+</body>
+</html>

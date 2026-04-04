@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ניהול | מנטרה</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Signika:wght@400;600;700&family=Basic&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f4faf2; --bg-alt: #e8f5e2; --white: #ffffff;
+      --green-mid: #c3dfc7; --green: #5a8a5e; --green-dark: #2e5d34;
+      --text: #2c3e2d; --text-soft: #5a6e5b;
+    }
+    html { font-family: 'Signika', Arial, sans-serif; }
+    body { background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.6; }
+
+    /* ── Header ── */
+    header {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(244,250,242,0.96);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--green-mid);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 32px; height: 64px;
+    }
+    .header-title { font-size: 1.1rem; font-weight: 700; color: var(--green-dark); }
+    .btn-logout {
+      background: transparent; border: 1.5px solid var(--green-mid);
+      border-radius: 50px; padding: 7px 22px;
+      font-family: 'Signika', sans-serif; font-size: 0.88rem; font-weight: 600;
+      color: var(--text-soft); cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+      text-decoration: none;
+    }
+    .btn-logout:hover { border-color: var(--green); color: var(--green-dark); }
+
+    /* ── Layout ── */
+    .page { max-width: 1100px; margin: 0 auto; padding: 40px 24px 60px; }
+
+    .section-title {
+      font-size: 1.25rem; font-weight: 700; color: var(--green-dark);
+      margin-bottom: 16px; padding-bottom: 10px;
+      border-bottom: 2px solid var(--green-mid);
+    }
+
+    /* ── Table ── */
+    .table-wrap { overflow-x: auto; margin-bottom: 52px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.93rem; }
+    thead th {
+      background: var(--bg-alt); color: var(--green-dark);
+      font-weight: 700; padding: 11px 14px;
+      text-align: right; border-bottom: 2px solid var(--green-mid);
+      white-space: nowrap;
+    }
+    tbody td {
+      padding: 10px 14px; border-bottom: 1px solid var(--green-mid);
+      vertical-align: middle;
+    }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: var(--bg-alt); }
+
+    .actions { display: flex; gap: 8px; }
+
+    .btn-edit {
+      background: none; border: 1.5px solid var(--green-mid); border-radius: 8px;
+      padding: 5px 14px; font-family: 'Signika', sans-serif;
+      font-size: 0.82rem; font-weight: 600; color: var(--green-dark);
+      cursor: pointer; transition: border-color 0.15s, background 0.15s;
+      white-space: nowrap;
+    }
+    .btn-edit:hover { border-color: var(--green); background: var(--bg-alt); }
+
+    .btn-del {
+      background: none; border: 1.5px solid #f5c6c6; border-radius: 8px;
+      padding: 5px 14px; font-family: 'Signika', sans-serif;
+      font-size: 0.82rem; font-weight: 600; color: #b94a48;
+      cursor: pointer; transition: border-color 0.15s, background 0.15s;
+      white-space: nowrap;
+    }
+    .btn-del:hover { background: #fff0f0; border-color: #b94a48; }
+
+    .badge-count {
+      display: inline-block; background: var(--green); color: #fff;
+      border-radius: 50px; padding: 2px 12px; font-size: 0.82rem; font-weight: 700;
+    }
+
+    .empty-msg {
+      font-family: 'Basic', sans-serif; color: var(--text-soft);
+      padding: 24px 0; text-align: center;
+    }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(44,62,45,0.5); z-index: 500;
+      align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--white); border-radius: 22px;
+      padding: 44px 38px 38px; max-width: 480px; width: 100%;
+      position: relative; box-shadow: 0 24px 64px rgba(44,62,45,0.2);
+    }
+    .modal-close {
+      position: absolute; top: 12px; left: 16px;
+      background: none; border: none; font-size: 1.5rem;
+      cursor: pointer; color: var(--text-soft); padding: 4px 6px; border-radius: 6px;
+      transition: color 0.15s, background 0.15s;
+    }
+    .modal-close:hover { color: var(--green-dark); background: var(--bg-alt); }
+    .modal-title { font-size: 1.15rem; font-weight: 700; color: var(--green-dark); margin-bottom: 24px; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-weight: 600; color: var(--green-dark); margin-bottom: 5px; font-size: 0.9rem; }
+    .form-group input {
+      width: 100%; border: 1.5px solid var(--green-mid); border-radius: 10px;
+      padding: 10px 14px; font-family: 'Signika', sans-serif; font-size: 0.97rem;
+      color: var(--text); background: var(--bg); outline: none;
+      transition: border-color 0.18s;
+    }
+    .form-group input:focus { border-color: var(--green); }
+    .modal-actions { display: flex; gap: 10px; margin-top: 6px; }
+    .btn-save {
+      flex: 1; background: var(--green); color: #fff; border: none;
+      padding: 12px; font-family: 'Signika', sans-serif; font-size: 1rem;
+      font-weight: 700; border-radius: 10px; cursor: pointer; transition: background 0.2s;
+    }
+    .btn-save:hover { background: #3d6b41; }
+    .btn-cancel {
+      flex: 1; background: transparent; color: var(--text-soft);
+      border: 1.5px solid var(--green-mid); padding: 12px;
+      font-family: 'Signika', sans-serif; font-size: 1rem; font-weight: 600;
+      border-radius: 10px; cursor: pointer; transition: background 0.2s;
+    }
+    .btn-cancel:hover { background: var(--bg-alt); }
+    .modal-error {
+      color: #b94a48; font-family: 'Basic', sans-serif; font-size: 0.87rem;
+      margin-top: 10px; display: none; text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-title">לוח ניהול — מנטרה</div>
+  <a href="/admin/logout" class="btn-logout">יציאה</a>
+</header>
+
+<div class="page">
+
+  <!-- ── Registrations ── -->
+  <h2 class="section-title">הרשמות</h2>
+  <div class="table-wrap">
+    <table id="reg-table">
+      <thead>
+        <tr>
+          <th>#</th><th>שם</th><th>טלפון</th><th>שיעור</th><th>נרשם</th><th>פעולות</th>
+        </tr>
+      </thead>
+      <tbody id="reg-tbody"><tr><td colspan="6" class="empty-msg">טוען...</td></tr></tbody>
+    </table>
+  </div>
+
+  <!-- ── Users ── -->
+  <h2 class="section-title">משתמשים ייחודיים</h2>
+  <div class="table-wrap">
+    <table id="usr-table">
+      <thead>
+        <tr>
+          <th>#</th><th>שם</th><th>טלפון</th><th>שיעורים</th><th>ראשון</th><th>אחרון</th><th>פעולות</th>
+        </tr>
+      </thead>
+      <tbody id="usr-tbody"><tr><td colspan="7" class="empty-msg">טוען...</td></tr></tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- ── Edit Registration Modal ── -->
+<div class="modal-overlay" id="reg-modal" onclick="if(event.target===this)closeModal('reg-modal')">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('reg-modal')">&times;</button>
+    <div class="modal-title">עריכת הרשמה</div>
+    <input type="hidden" id="edit-reg-id">
+    <div class="form-group"><label>שם</label><input type="text" id="edit-reg-name"></div>
+    <div class="form-group"><label>טלפון</label><input type="text" id="edit-reg-phone"></div>
+    <div class="form-group"><label>שיעור</label><input type="text" id="edit-reg-date"></div>
+    <div class="modal-actions">
+      <button class="btn-save" onclick="saveReg()">שמור</button>
+      <button class="btn-cancel" onclick="closeModal('reg-modal')">ביטול</button>
+    </div>
+    <div class="modal-error" id="reg-modal-err"></div>
+  </div>
+</div>
+
+<!-- ── Edit User Modal ── -->
+<div class="modal-overlay" id="usr-modal" onclick="if(event.target===this)closeModal('usr-modal')">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('usr-modal')">&times;</button>
+    <div class="modal-title">עריכת משתמש</div>
+    <input type="hidden" id="edit-usr-id">
+    <div class="form-group"><label>שם</label><input type="text" id="edit-usr-name"></div>
+    <div class="form-group"><label>טלפון</label><input type="text" id="edit-usr-phone"></div>
+    <div class="form-group"><label>מספר שיעורים</label><input type="number" id="edit-usr-count" min="0"></div>
+    <div class="modal-actions">
+      <button class="btn-save" onclick="saveUser()">שמור</button>
+      <button class="btn-cancel" onclick="closeModal('usr-modal')">ביטול</button>
+    </div>
+    <div class="modal-error" id="usr-modal-err"></div>
+  </div>
+</div>
+
+<script>
+  /* ── helpers ── */
+  function openModal(id)  { document.getElementById(id).classList.add('open');    document.body.style.overflow='hidden'; }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); document.body.style.overflow=''; }
+  document.addEventListener('keydown', e => { if(e.key==='Escape'){ closeModal('reg-modal'); closeModal('usr-modal'); } });
+
+  function fmtDate(ts) {
+    if (!ts) return '';
+    const d = new Date(ts);
+    return isNaN(d) ? ts : d.toLocaleDateString('he-IL');
+  }
+
+  /* ── Registrations ── */
+  let regs = [];
+
+  async function loadRegs() {
+    const res  = await fetch('/admin/api/registrations');
+    regs       = await res.json();
+    const tbody = document.getElementById('reg-tbody');
+    if (!regs.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty-msg">אין הרשמות.</td></tr>'; return; }
+    tbody.innerHTML = regs.map((r, i) => `
+      <tr>
+        <td>${i+1}</td>
+        <td>${esc(r.name)}</td>
+        <td>${esc(r.phone)}</td>
+        <td>${esc(r.class_date)}</td>
+        <td>${fmtDate(r.created_at)}</td>
+        <td><div class="actions">
+          <button class="btn-edit" onclick="editReg(${r.id})">עריכה</button>
+          <button class="btn-del"  onclick="deleteReg(${r.id})">מחיקה</button>
+        </div></td>
+      </tr>`).join('');
+  }
+
+  function editReg(id) {
+    const r = regs.find(x => x.id === id);
+    document.getElementById('edit-reg-id').value    = r.id;
+    document.getElementById('edit-reg-name').value  = r.name;
+    document.getElementById('edit-reg-phone').value = r.phone;
+    document.getElementById('edit-reg-date').value  = r.class_date;
+    document.getElementById('reg-modal-err').style.display = 'none';
+    openModal('reg-modal');
+  }
+
+  async function saveReg() {
+    const id    = document.getElementById('edit-reg-id').value;
+    const name  = document.getElementById('edit-reg-name').value.trim();
+    const phone = document.getElementById('edit-reg-phone').value.trim();
+    const date  = document.getElementById('edit-reg-date').value.trim();
+    const errEl = document.getElementById('reg-modal-err');
+    errEl.style.display = 'none';
+    const res = await fetch(`/admin/api/registrations/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, phone, class_date: date })
+    });
+    if (res.ok) { closeModal('reg-modal'); loadRegs(); loadUsers(); }
+    else { const d = await res.json(); errEl.textContent = d.error || 'שגיאה'; errEl.style.display='block'; }
+  }
+
+  async function deleteReg(id) {
+    if (!confirm('למחוק הרשמה זו?')) return;
+    await fetch(`/admin/api/registrations/${id}`, { method: 'DELETE' });
+    loadRegs(); loadUsers();
+  }
+
+  /* ── Users ── */
+  let users = [];
+
+  async function loadUsers() {
+    const res   = await fetch('/admin/api/users');
+    users       = await res.json();
+    const tbody = document.getElementById('usr-tbody');
+    if (!users.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty-msg">אין משתמשים.</td></tr>'; return; }
+    tbody.innerHTML = users.map((u, i) => `
+      <tr>
+        <td>${i+1}</td>
+        <td>${esc(u.name)}</td>
+        <td>${esc(u.phone)}</td>
+        <td><span class="badge-count">${u.lesson_count}</span></td>
+        <td>${fmtDate(u.first_seen)}</td>
+        <td>${fmtDate(u.last_seen)}</td>
+        <td><div class="actions">
+          <button class="btn-edit" onclick="editUser(${u.id})">עריכה</button>
+          <button class="btn-del"  onclick="deleteUser(${u.id})">מחיקה</button>
+        </div></td>
+      </tr>`).join('');
+  }
+
+  function editUser(id) {
+    const u = users.find(x => x.id === id);
+    document.getElementById('edit-usr-id').value     = u.id;
+    document.getElementById('edit-usr-name').value   = u.name;
+    document.getElementById('edit-usr-phone').value  = u.phone;
+    document.getElementById('edit-usr-count').value  = u.lesson_count;
+    document.getElementById('usr-modal-err').style.display = 'none';
+    openModal('usr-modal');
+  }
+
+  async function saveUser() {
+    const id    = document.getElementById('edit-usr-id').value;
+    const name  = document.getElementById('edit-usr-name').value.trim();
+    const phone = document.getElementById('edit-usr-phone').value.trim();
+    const count = document.getElementById('edit-usr-count').value;
+    const errEl = document.getElementById('usr-modal-err');
+    errEl.style.display = 'none';
+    const res = await fetch(`/admin/api/users/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, phone, lesson_count: count })
+    });
+    if (res.ok) { closeModal('usr-modal'); loadUsers(); }
+    else { const d = await res.json(); errEl.textContent = d.error || 'שגיאה'; errEl.style.display='block'; }
+  }
+
+  async function deleteUser(id) {
+    if (!confirm('למחוק משתמש זה?')) return;
+    await fetch(`/admin/api/users/${id}`, { method: 'DELETE' });
+    loadUsers();
+  }
+
+  /* ── XSS guard ── */
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  /* ── Init ── */
+  loadRegs();
+  loadUsers();
+</script>
+</body>
+</html>
