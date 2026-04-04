@@ -75,13 +75,47 @@ def init_db():
             'INSERT INTO admins (username, password_hash) VALUES (?, ?)',
             ('dhdarm_admin', generate_password_hash('sheshet'))
         )
+    # Migration: rebuild users table if it has stale UNIQUE on phone or missing user_key
+    cols      = {row[1] for row in con.execute('PRAGMA table_info(users)')}
+    indexes   = con.execute('PRAGMA index_list(users)').fetchall()
+    phone_unique = any(
+        row[2] == 1  # unique flag
+        and con.execute(f'PRAGMA index_info("{row[1]}")').fetchone()[2] == 'phone'
+        for row in indexes
+    )
+    if 'user_key' not in cols or phone_unique:
+        con.execute('ALTER TABLE users RENAME TO users_old')
+        con.execute('''
+            CREATE TABLE users (
+                id             INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_key       TEXT    NOT NULL UNIQUE,
+                name           TEXT    NOT NULL,
+                phone          TEXT    NOT NULL,
+                lesson_count   INTEGER NOT NULL DEFAULT 0,
+                first_seen     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_seen      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        for row in con.execute('SELECT * FROM users_old').fetchall():
+            d = dict(row)
+            key = d.get('user_key') or (normalize_name(d['name']) + normalize_phone(d['phone']))
+            con.execute('''
+                INSERT INTO users (user_key, name, phone, lesson_count, first_seen, last_seen)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT(user_key) DO UPDATE SET
+                    lesson_count = MAX(lesson_count, excluded.lesson_count),
+                    last_seen    = excluded.last_seen
+            ''', (key, d['name'], d['phone'], d['lesson_count'],
+                  d.get('first_seen'), d.get('last_seen')))
+        con.execute('DROP TABLE users_old')
     con.commit()
     con.close()
 
 
 def get_db():
-    con = sqlite3.connect(DB_PATH)
+    con = sqlite3.connect(DB_PATH, timeout=10)
     con.row_factory = sqlite3.Row
+    con.execute('PRAGMA journal_mode=WAL')
     return con
 
 
@@ -153,10 +187,12 @@ def index():
 
 @app.route('/api/registrations', methods=['GET'])
 def get_registrations():
-    con  = get_db()
-    rows = con.execute('SELECT * FROM registrations ORDER BY created_at DESC').fetchall()
-    con.close()
-    return jsonify([dict(r) for r in rows])
+    con = get_db()
+    try:
+        rows = con.execute('SELECT * FROM registrations ORDER BY created_at DESC').fetchall()
+        return jsonify([dict(r) for r in rows])
+    finally:
+        con.close()
 
 
 @app.route('/api/register', methods=['POST'])
@@ -170,38 +206,44 @@ def register():
     if not valid_name(name):
         return jsonify({'error': 'השם יכול להכיל אותיות בעברית או באנגלית בלבד'}), 400
     con = get_db()
-    con.execute(
-        'INSERT INTO registrations (name, phone, class_date) VALUES (?, ?, ?)',
-        (name, phone, class_date)
-    )
-    upsert_user(con, name, phone)
-    con.commit()
-    con.close()
-    return jsonify({'ok': True}), 201
+    try:
+        con.execute(
+            'INSERT INTO registrations (name, phone, class_date) VALUES (?, ?, ?)',
+            (name, phone, class_date)
+        )
+        upsert_user(con, name, phone)
+        con.commit()
+        return jsonify({'ok': True}), 201
+    finally:
+        con.close()
 
 
 @app.route('/api/unregister/<int:reg_id>', methods=['DELETE'])
 def unregister(reg_id):
     con = get_db()
-    row = con.execute(
-        'SELECT name, phone FROM registrations WHERE id = ?', (reg_id,)
-    ).fetchone()
-    if row:
-        con.execute('DELETE FROM registrations WHERE id = ?', (reg_id,))
-        decrement_user(con, row['name'], row['phone'])
-        con.commit()
-    con.close()
-    return jsonify({'ok': True})
+    try:
+        row = con.execute(
+            'SELECT name, phone FROM registrations WHERE id = ?', (reg_id,)
+        ).fetchone()
+        if row:
+            con.execute('DELETE FROM registrations WHERE id = ?', (reg_id,))
+            decrement_user(con, row['name'], row['phone'])
+            con.commit()
+        return jsonify({'ok': True})
+    finally:
+        con.close()
 
 
 @app.route('/api/users', methods=['GET'])
 def get_users():
-    con  = get_db()
-    rows = con.execute(
-        'SELECT * FROM users ORDER BY lesson_count DESC, last_seen DESC'
-    ).fetchall()
-    con.close()
-    return jsonify([dict(r) for r in rows])
+    con = get_db()
+    try:
+        rows = con.execute(
+            'SELECT * FROM users ORDER BY lesson_count DESC, last_seen DESC'
+        ).fetchall()
+        return jsonify([dict(r) for r in rows])
+    finally:
+        con.close()
 
 
 # ── Admin pages ───────────────────────────────────────────────────────────────
@@ -212,11 +254,13 @@ def admin_login():
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '')
-        con  = get_db()
-        row  = con.execute(
-            'SELECT password_hash FROM admins WHERE username = ?', (username,)
-        ).fetchone()
-        con.close()
+        con = get_db()
+        try:
+            row = con.execute(
+                'SELECT password_hash FROM admins WHERE username = ?', (username,)
+            ).fetchone()
+        finally:
+            con.close()
         if row and check_password_hash(row['password_hash'], password):
             session['admin'] = username
             return redirect(url_for('admin_dashboard'))
@@ -241,10 +285,12 @@ def admin_dashboard():
 @app.route('/admin/api/registrations', methods=['GET'])
 @admin_required
 def admin_get_registrations():
-    con  = get_db()
-    rows = con.execute('SELECT * FROM registrations ORDER BY created_at DESC').fetchall()
-    con.close()
-    return jsonify([dict(r) for r in rows])
+    con = get_db()
+    try:
+        rows = con.execute('SELECT * FROM registrations ORDER BY created_at DESC').fetchall()
+        return jsonify([dict(r) for r in rows])
+    finally:
+        con.close()
 
 
 @app.route('/admin/api/registrations/<int:reg_id>', methods=['PUT'])
@@ -259,48 +305,53 @@ def admin_update_registration(reg_id):
     if not valid_name(name):
         return jsonify({'error': 'השם יכול להכיל אותיות בעברית או באנגלית בלבד'}), 400
     con = get_db()
-    old = con.execute(
-        'SELECT name, phone FROM registrations WHERE id = ?', (reg_id,)
-    ).fetchone()
-    if not old:
+    try:
+        old = con.execute(
+            'SELECT name, phone FROM registrations WHERE id = ?', (reg_id,)
+        ).fetchone()
+        if not old:
+            return jsonify({'error': 'לא נמצא'}), 404
+        # Adjust user counters: undo old, apply new
+        decrement_user(con, old['name'], old['phone'])
+        con.execute(
+            'UPDATE registrations SET name=?, phone=?, class_date=? WHERE id=?',
+            (name, phone, class_date, reg_id)
+        )
+        upsert_user(con, name, phone)
+        con.commit()
+        return jsonify({'ok': True})
+    finally:
         con.close()
-        return jsonify({'error': 'לא נמצא'}), 404
-    # Adjust user counters: undo old, apply new
-    decrement_user(con, old['name'], old['phone'])
-    con.execute(
-        'UPDATE registrations SET name=?, phone=?, class_date=? WHERE id=?',
-        (name, phone, class_date, reg_id)
-    )
-    upsert_user(con, name, phone)
-    con.commit()
-    con.close()
-    return jsonify({'ok': True})
 
 
 @app.route('/admin/api/registrations/<int:reg_id>', methods=['DELETE'])
 @admin_required
 def admin_delete_registration(reg_id):
     con = get_db()
-    row = con.execute(
-        'SELECT name, phone FROM registrations WHERE id = ?', (reg_id,)
-    ).fetchone()
-    if row:
-        con.execute('DELETE FROM registrations WHERE id = ?', (reg_id,))
-        decrement_user(con, row['name'], row['phone'])
-        con.commit()
-    con.close()
-    return jsonify({'ok': True})
+    try:
+        row = con.execute(
+            'SELECT name, phone FROM registrations WHERE id = ?', (reg_id,)
+        ).fetchone()
+        if row:
+            con.execute('DELETE FROM registrations WHERE id = ?', (reg_id,))
+            decrement_user(con, row['name'], row['phone'])
+            con.commit()
+        return jsonify({'ok': True})
+    finally:
+        con.close()
 
 
 @app.route('/admin/api/users', methods=['GET'])
 @admin_required
 def admin_get_users():
-    con  = get_db()
-    rows = con.execute(
-        'SELECT * FROM users ORDER BY lesson_count DESC, last_seen DESC'
-    ).fetchall()
-    con.close()
-    return jsonify([dict(r) for r in rows])
+    con = get_db()
+    try:
+        rows = con.execute(
+            'SELECT * FROM users ORDER BY lesson_count DESC, last_seen DESC'
+        ).fetchall()
+        return jsonify([dict(r) for r in rows])
+    finally:
+        con.close()
 
 
 @app.route('/admin/api/users/<int:user_id>', methods=['PUT'])
@@ -316,29 +367,32 @@ def admin_update_user(user_id):
         return jsonify({'error': 'השם יכול להכיל אותיות בעברית או באנגלית בלבד'}), 400
     new_key = make_user_key(name, phone)
     con = get_db()
-    conflict = con.execute(
-        'SELECT id FROM users WHERE user_key = ? AND id != ?', (new_key, user_id)
-    ).fetchone()
-    if conflict:
+    try:
+        conflict = con.execute(
+            'SELECT id FROM users WHERE user_key = ? AND id != ?', (new_key, user_id)
+        ).fetchone()
+        if conflict:
+            return jsonify({'error': 'משתמש עם מפתח זה כבר קיים'}), 409
+        con.execute(
+            'UPDATE users SET user_key=?, name=?, phone=?, lesson_count=? WHERE id=?',
+            (new_key, normalize_name(name), normalize_phone(phone), int(count), user_id)
+        )
+        con.commit()
+        return jsonify({'ok': True})
+    finally:
         con.close()
-        return jsonify({'error': 'משתמש עם מפתח זה כבר קיים'}), 409
-    con.execute(
-        'UPDATE users SET user_key=?, name=?, phone=?, lesson_count=? WHERE id=?',
-        (new_key, normalize_name(name), normalize_phone(phone), int(count), user_id)
-    )
-    con.commit()
-    con.close()
-    return jsonify({'ok': True})
 
 
 @app.route('/admin/api/users/<int:user_id>', methods=['DELETE'])
 @admin_required
 def admin_delete_user(user_id):
     con = get_db()
-    con.execute('DELETE FROM users WHERE id = ?', (user_id,))
-    con.commit()
-    con.close()
-    return jsonify({'ok': True})
+    try:
+        con.execute('DELETE FROM users WHERE id = ?', (user_id,))
+        con.commit()
+        return jsonify({'ok': True})
+    finally:
+        con.close()
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────
