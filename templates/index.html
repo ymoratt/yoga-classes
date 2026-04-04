@@ -221,6 +221,13 @@
 
     .btn-unreg:hover { background: var(--white); border-color: var(--green); }
 
+    .unreg-btns {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 14px;
+    }
+
     /* ===== FOOTER ===== */
     footer {
       display: flex;
@@ -387,6 +394,17 @@
       text-align: center;
     }
 
+    .field-error {
+      display: block;
+      color: #b94a48;
+      font-family: 'Basic', sans-serif;
+      font-size: 0.82rem;
+      margin-top: 5px;
+      min-height: 1em;
+    }
+
+    input.invalid { border-color: #b94a48 !important; }
+
     /* ===== UNREGISTER MODAL LIST ===== */
     .unreg-list {
       list-style: none;
@@ -520,6 +538,7 @@
         <div class="card-divider"></div>
         <div class="class-time">18:30</div>
         <button class="btn-reg" onclick="openRegModal(0, '18:30')">הרשמה</button>
+        <button class="btn-unreg" onclick="openUnregModal(0, '18:30')">ביטול הרשמה</button>
         <button class="btn-list" onclick="openListModal(0, '18:30')">הצג רשומים</button>
       </div>
 
@@ -531,6 +550,7 @@
         <div class="card-divider"></div>
         <div class="class-time">09:15</div>
         <button class="btn-reg" onclick="openRegModal(2, '09:15')">הרשמה</button>
+        <button class="btn-unreg" onclick="openUnregModal(2, '09:15')">ביטול הרשמה</button>
         <button class="btn-list" onclick="openListModal(2, '09:15')">הצג רשומים</button>
       </div>
 
@@ -542,6 +562,7 @@
         <div class="card-divider"></div>
         <div class="class-time">09:15</div>
         <button class="btn-reg" onclick="openRegModal(4, '09:15')">הרשמה</button>
+        <button class="btn-unreg" onclick="openUnregModal(4, '09:15')">ביטול הרשמה</button>
         <button class="btn-list" onclick="openListModal(4, '09:15')">הצג רשומים</button>
       </div>
 
@@ -549,12 +570,6 @@
   </div>
 </div>
 
-
-<!-- ==================== UNREGISTER SECTION ==================== -->
-<div class="unreg-section">
-  <p class="unreg-label">רשומים לשיעור ורוצים לבטל?</p>
-  <button class="btn-unreg" onclick="openUnregModal()">ביטול הרשמה</button>
-</div>
 
 
 <!-- ==================== FOOTER ==================== -->
@@ -577,10 +592,12 @@
         <div class="form-group">
           <label for="inp-name">שם מלא</label>
           <input type="text" id="inp-name" placeholder="השם שלך" required autocomplete="name">
+          <span class="field-error" id="err-name"></span>
         </div>
         <div class="form-group">
           <label for="inp-phone">טלפון</label>
-          <input type="tel" id="inp-phone" placeholder="050-0000000" required autocomplete="tel">
+          <input type="tel" id="inp-phone" placeholder="050-0000000 או +972-50-0000000" required autocomplete="tel">
+          <span class="field-error" id="err-phone"></span>
         </div>
         <button type="submit" class="btn-submit" id="btn-submit-reg">שלח</button>
         <div class="form-error" id="reg-error">אירעה שגיאה. נסו שוב.</div>
@@ -606,7 +623,7 @@
     <button class="modal-close" onclick="closeUnregModal()" aria-label="סגור">&times;</button>
 
     <div class="modal-title" id="unreg-modal-title">ביטול הרשמה</div>
-    <div class="modal-subtitle">בחרו את השם שברצונכם להסיר</div>
+    <div class="modal-subtitle" id="unreg-modal-subtitle"></div>
 
     <div id="unreg-loading" class="unreg-loading">טוען...</div>
     <ul class="unreg-list" id="unreg-list" style="display:none;"></ul>
@@ -671,6 +688,8 @@
     document.getElementById('reg-thanks-view').style.display = 'none';
     document.getElementById('reg-error').style.display       = 'none';
     document.getElementById('reg-form').reset();
+    setFieldError('inp-name',  'err-name',  '');
+    setFieldError('inp-phone', 'err-phone', '');
     document.getElementById('reg-overlay').classList.add('open');
     document.body.style.overflow = 'hidden';
     setTimeout(() => document.getElementById('inp-name').focus(), 50);
@@ -681,11 +700,38 @@
     document.body.style.overflow = '';
   }
 
+  // Letters (Hebrew + Latin) and spaces only
+  const NAME_RE  = /^[\u0590-\u05FF\uFB1D-\uFB4Fa-zA-Z\s'-]+$/;
+  // Israeli mobile/landline: optional +972 or 0, then 2-digit area, then 7 digits
+  // Accepts separators: space, dash, dot — or none
+  const PHONE_RE = /^(\+972|0)[-.\s]?(5[0-9]|[2-9]\d)[-.\s]?\d{3}[-.\s]?\d{4}$/;
+
+  function setFieldError(inputId, errId, msg) {
+    const inp = document.getElementById(inputId);
+    const err = document.getElementById(errId);
+    if (msg) {
+      inp.classList.add('invalid');
+      err.textContent = msg;
+    } else {
+      inp.classList.remove('invalid');
+      err.textContent = '';
+    }
+    return !!msg;
+  }
+
   async function submitReg(e) {
     e.preventDefault();
     const name  = document.getElementById('inp-name').value.trim();
     const phone = document.getElementById('inp-phone').value.trim();
-    if (!name || !phone) return;
+
+    let hasError = false;
+    hasError |= setFieldError('inp-name',  'err-name',
+      !name                      ? 'נא להזין שם.' :
+      !NAME_RE.test(name)        ? 'השם יכול להכיל אותיות ורווחים בלבד.' : '');
+    hasError |= setFieldError('inp-phone', 'err-phone',
+      !phone                     ? 'נא להזין מספר טלפון.' :
+      !PHONE_RE.test(phone)      ? 'פורמט לא תקין. לדוגמה: 050-0000000 או +972-50-0000000' : '');
+    if (hasError) return;
 
     const btn = document.getElementById('btn-submit-reg');
     btn.disabled = true;
@@ -708,7 +754,11 @@
     }
   }
 
-  async function openUnregModal() {
+  let currentUnregLabel = '';
+
+  async function openUnregModal(dayIndex, time) {
+    currentUnregLabel = buildClassDateLabel(dayIndex, time);
+    document.getElementById('unreg-modal-subtitle').textContent = currentUnregLabel;
     document.getElementById('unreg-overlay').classList.add('open');
     document.body.style.overflow = 'hidden';
     await loadRegistrations();
@@ -731,7 +781,8 @@
 
     try {
       const res  = await fetch('/api/registrations');
-      const data = await res.json();
+      const all  = await res.json();
+      const data = all.filter(r => r.class_date === currentUnregLabel);
       loadingEl.style.display = 'none';
 
       if (!data.length) { emptyEl.style.display = ''; return; }
@@ -742,8 +793,8 @@
         li.className = 'unreg-item';
         li.innerHTML =
           '<div class="unreg-item-info">' +
-            '<div class="unreg-item-name">'   + escHtml(reg.name)       + '</div>' +
-            '<div class="unreg-item-detail">' + escHtml(reg.phone) + ' &nbsp;|&nbsp; ' + escHtml(reg.class_date) + '</div>' +
+            '<div class="unreg-item-name">'   + escHtml(reg.name)  + '</div>' +
+            '<div class="unreg-item-detail">' + escHtml(reg.phone) + '</div>' +
           '</div>' +
           '<button class="btn-remove" onclick="removeReg(' + reg.id + ', this)">הסר</button>';
         listEl.appendChild(li);
