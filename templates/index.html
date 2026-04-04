@@ -231,14 +231,45 @@
     /* ===== FOOTER ===== */
     footer {
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
+      gap: 10px;
       padding: 18px 20px;
       border-top: 1px solid var(--green-mid);
       background: var(--bg);
     }
 
     footer a { display: flex; align-items: center; text-decoration: none; }
+
+    .privacy-link {
+      font-family: 'Basic', sans-serif;
+      font-size: 0.78rem;
+      color: var(--text-soft);
+      background: none;
+      border: none;
+      cursor: pointer;
+      text-decoration: underline;
+      padding: 0;
+    }
+    .privacy-link:hover { color: var(--green-dark); }
+
+    /* ===== PRIVACY MODAL ===== */
+    #privacy-overlay { z-index: 600; }
+    .privacy-modal { max-width: 520px; }
+    .privacy-modal h4 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--green-dark);
+      margin: 20px 0 6px;
+    }
+    .privacy-modal h4:first-of-type { margin-top: 0; }
+    .privacy-modal p {
+      font-family: 'Basic', sans-serif;
+      font-size: 0.9rem;
+      color: var(--text-soft);
+      line-height: 1.65;
+    }
 
     .logo-img-footer {
       height: 48px;
@@ -599,7 +630,29 @@
   <a href="https://www.mantrahome.co.il" target="_blank" rel="noopener" aria-label="מנטרה">
     <img src="/static/assets/mantrahome_logo.avif" alt="מנטרה" class="logo-img-footer">
   </a>
+  <button class="privacy-link" onclick="document.getElementById('privacy-overlay').classList.add('open'); document.body.style.overflow='hidden'">מדיניות פרטיות</button>
 </footer>
+
+
+<!-- ==================== PRIVACY MODAL ==================== -->
+<div class="modal-overlay" id="privacy-overlay" onclick="if(event.target===this){this.classList.remove('open');document.body.style.overflow=''}">
+  <div class="modal privacy-modal" role="dialog" aria-modal="true" aria-label="מדיניות פרטיות">
+    <button class="modal-close" onclick="document.getElementById('privacy-overlay').classList.remove('open');document.body.style.overflow=''" aria-label="סגור">&times;</button>
+    <div class="modal-title">מדיניות פרטיות</div>
+
+    <h4>איזה מידע אנו אוספים?</h4>
+    <p>בעת ההרשמה לשיעור אנו אוספים שם מלא ומספר טלפון בלבד.</p>
+
+    <h4>כיצד המידע משמש?</h4>
+    <p>המידע משמש אך ורק לניהול רשימת הנרשמים לשיעורי היוגה של סטודיו מנטרה. הוא אינו מועבר לגורמים חיצוניים ואינו נמכר.</p>
+
+    <h4>מי רואה את המידע?</h4>
+    <p>צוות הסטודיו בלבד. מספרי הטלפון מוצגים לנרשמים האחרים ברשימת השיעור.</p>
+
+    <h4>מחיקת מידע</h4>
+    <p>לבקשת מחיקת הנתונים שלך, אנא פנה/י אלינו ישירות דרך אתר מנטרה.</p>
+  </div>
+</div>
 
 
 <!-- ==================== REGISTRATION MODAL ==================== -->
@@ -624,6 +677,9 @@
         </div>
         <button type="submit" class="btn-submit" id="btn-submit-reg">שלח</button>
         <div class="form-error" id="reg-error">אירעה שגיאה. נסו שוב.</div>
+        <p style="text-align:center; margin-top:12px; font-family:'Basic',sans-serif; font-size:0.78rem; color:var(--text-soft);">
+          בהרשמה אתה/את מסכים/ה ל<button type="button" class="privacy-link" onclick="document.getElementById('privacy-overlay').classList.add('open');document.body.style.overflow='hidden'">מדיניות הפרטיות</button>
+        </p>
       </form>
     </div>
 
@@ -924,7 +980,11 @@
   }
 
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { closeRegModal(); closeUnregModal(); closeListModal(); }
+    if (e.key === 'Escape') {
+      closeRegModal(); closeUnregModal(); closeListModal();
+      document.getElementById('privacy-overlay').classList.remove('open');
+      document.body.style.overflow = '';
+    }
   });
 
   /* ---- List modal ---- */
