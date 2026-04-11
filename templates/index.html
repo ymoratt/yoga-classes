@@ -570,8 +570,8 @@
 
 <!-- ==================== HERO ==================== -->
 <section class="hero">
-  <h1 class="hero-title">שיעורי יוגה שבועיים</h1>
-  <p class="hero-sub">הצטרפו אלינו לתרגול קבוע &nbsp;|&nbsp; סטודיו מנטרה, עין כרמל</p>
+  <h1 class="hero-title">קונדליני יוגה ומדיטציה במנטרה</h1>
+  <p class="hero-sub">סדנאות האמנים • עין כרמל</p>
 </section>
 
 
@@ -806,20 +806,12 @@
     const match = allUsers.find(u => normalizeNameForLookup(u.name) === normInput);
 
     if (match) {
-      hint.className = 'name-hint known';
-      hint.textContent = 'מספר שמור: ' + match.phone + ' — לחץ/י למילוי אוטומטי';
-      hint.style.display = 'block';
-      hint.onclick = () => {
-        document.getElementById('inp-phone').value = match.phone;
-        setFieldError('inp-phone', 'err-phone', '');
-        hint.className = 'name-hint new-user';
-        hint.textContent = 'מספר הטלפון מולא אוטומטית ✓';
-        hint.onclick = null;
-      };
+      document.getElementById('inp-phone').value = match.phone;
+      setFieldError('inp-phone', 'err-phone', '');
+      hint.style.display = 'none';
+      hint.onclick = null;
     } else {
-      hint.className = 'name-hint new-user';
-      hint.textContent = 'נרשמ/ת בפעם הראשונה?';
-      hint.style.display = 'block';
+      hint.style.display = 'none';
       hint.onclick = null;
     }
   }
