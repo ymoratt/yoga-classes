@@ -689,9 +689,8 @@
           <polyline points="20 6 9 17 4 12"/>
         </svg>
       </div>
-      <h3>נרשמת בהצלחה!</h3>
-      <p>נתראה בשיעור.</p>
-      <p id="reg-admissions-notice" style="display:none; margin-top:12px; color:#b94a48; font-weight:600;"></p>
+      <h3 dir="ltr">Sat Nam 🕉</h3>
+      <p>נתראה בשיעור</p>
     </div>
   </div>
 </div>
@@ -874,24 +873,8 @@
       const body = await res.json().catch(() => ({}));
       document.getElementById('reg-form-view').style.display   = 'none';
       const thanksEl = document.getElementById('reg-thanks-view');
-      const noticeEl = document.getElementById('reg-admissions-notice');
-      noticeEl.style.display = 'none';
-      noticeEl.textContent   = '';
-      if (body.admissions != null) {
-        noticeEl.style.display = 'block';
-        if (body.admissions < 1) {
-          noticeEl.textContent = 'אין כרטיסיה? נגמרו הניקובים....';
-          noticeEl.style.color = '#b94a48';
-        } else if (body.admissions === 1) {
-          noticeEl.textContent = 'זהו הניקוב האחרון...';
-          noticeEl.style.color = '#b94a48';
-        } else {
-          noticeEl.textContent = 'נותרו עוד ' + body.admissions + ' ניקובים';
-          noticeEl.style.color = '';
-        }
-      }
       thanksEl.style.display = 'block';
-      setTimeout(closeRegModal, body.admissions != null ? 4500 : 2800);
+      setTimeout(closeRegModal, 2800);
     } catch {
       const errEl = document.getElementById('reg-error');
       errEl.textContent = 'אירעה שגיאה. נסו שוב.';
