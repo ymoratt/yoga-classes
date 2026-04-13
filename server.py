@@ -54,8 +54,15 @@ class _Conn:
     the codebase so that the route handlers need no structural changes.
     """
     def __init__(self):
+        url = os.environ.get('DATABASE_URL')
+        if not url:
+            raise RuntimeError(
+                'DATABASE_URL environment variable is not set. '
+                'In Railway: add a PostgreSQL service, then add a '
+                'DATABASE_URL variable referencing ${{Postgres.DATABASE_URL}}.'
+            )
         self._con = psycopg2.connect(
-            os.environ['DATABASE_URL'],
+            url,
             cursor_factory=psycopg2.extras.RealDictCursor,
         )
 
