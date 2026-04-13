@@ -1,9 +1,13 @@
+import logging
 import mimetypes
 import os
 import re
 import secrets
 import psycopg2
 import psycopg2.extras
+
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger(__name__)
 from functools import wraps
 from flask import Flask, jsonify, request, render_template, session, redirect, url_for
 from flask_cors import CORS
@@ -438,8 +442,13 @@ _db_ready = False
 def _ensure_db():
     global _db_ready
     if not _db_ready:
-        init_db()
-        _db_ready = True
+        try:
+            init_db()
+            _db_ready = True
+            log.info('Database initialised successfully')
+        except Exception as exc:
+            log.exception('Database initialisation failed: %s', exc)
+            raise
 
 
 if __name__ == '__main__':
