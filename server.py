@@ -214,6 +214,12 @@ def register():
         ).fetchone()
         if already:
             return jsonify({'error': 'כבר רשומ/ה לשיעור זה'}), 409
+        count = con.execute(
+            'SELECT COUNT(*) FROM registrations WHERE class_date = ?',
+            (class_date,)
+        ).fetchone()[0]
+        if count >= 15:
+            return jsonify({'error': 'class_full'}), 409
         con.execute(
             'INSERT INTO registrations (name, phone, class_date) VALUES (?, ?, ?)',
             (name, phone, class_date)

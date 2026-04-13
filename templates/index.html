@@ -430,6 +430,10 @@
       text-align: center;
     }
 
+    .form-error--big { font-size: 1.2rem; font-weight: 600; }
+
+    .modal-title--error { color: #b94a48; }
+
     .field-error {
       display: block;
       color: #b94a48;
@@ -777,6 +781,10 @@
 
   async function openRegModal(dayIndex, time) {
     currentClassDate = buildClassDateLabel(dayIndex, time);
+    const titleEl = document.getElementById('reg-modal-title');
+    titleEl.textContent = 'הרשמה לשיעור';
+    titleEl.classList.remove('modal-title--error');
+    document.getElementById('reg-error').classList.remove('form-error--big');
     document.getElementById('reg-modal-subtitle').textContent = currentClassDate;
     document.getElementById('reg-form-view').style.display   = '';
     document.getElementById('reg-thanks-view').style.display = 'none';
@@ -880,7 +888,15 @@
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         const errEl = document.getElementById('reg-error');
-        errEl.textContent = body.error || 'אירעה שגיאה. נסו שוב.';
+        if (body.error === 'class_full') {
+          const titleEl = document.getElementById('reg-modal-title');
+          titleEl.textContent = 'ההרשמה נכשלה';
+          titleEl.classList.add('modal-title--error');
+          errEl.textContent = 'סליחה, נגמר המקום :(';
+          errEl.classList.add('form-error--big');
+        } else {
+          errEl.textContent = body.error || 'אירעה שגיאה. נסו שוב.';
+        }
         errEl.style.display = 'block';
         return;
       }
