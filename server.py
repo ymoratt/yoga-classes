@@ -2,7 +2,8 @@ import mimetypes
 import os
 import re
 import secrets
-import sqlite3
+import psycopg2
+import psycopg2.extras
 from functools import wraps
 from flask import Flask, jsonify, request, render_template, session, redirect, url_for
 from flask_cors import CORS
@@ -17,10 +18,14 @@ def valid_name(name):
     return bool(name and NAME_RE.match(name))
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH  = os.path.join(BASE_DIR, 'yoga_classes.db')
 
 
 def get_or_create_secret_key():
+    # Prefer an explicit env var (required on Railway where the filesystem is ephemeral)
+    env_key = os.environ.get('SECRET_KEY')
+    if env_key:
+        return env_key.encode()
+    # Fall back to a persisted file for local development
     key_path = os.path.join(BASE_DIR, '.secret_key')
     if os.path.exists(key_path):
         with open(key_path, 'rb') as f:
@@ -38,89 +43,77 @@ CORS(app)
 
 # ── Database ──────────────────────────────────────────────────────────────────
 
+class _Conn:
+    """Thin wrapper around a psycopg2 connection.
+
+    Exposes the same con.execute(sql, params).fetch*() pattern used throughout
+    the codebase so that the route handlers need no structural changes.
+    """
+    def __init__(self):
+        self._con = psycopg2.connect(
+            os.environ['DATABASE_URL'],
+            cursor_factory=psycopg2.extras.RealDictCursor,
+        )
+
+    def execute(self, sql, params=()):
+        cur = self._con.cursor()
+        cur.execute(sql, params)
+        return cur
+
+    def commit(self):
+        self._con.commit()
+
+    def close(self):
+        self._con.close()
+
+
 def init_db():
-    con = sqlite3.connect(DB_PATH)
-    con.execute('''
-        CREATE TABLE IF NOT EXISTS registrations (
-            id         INTEGER PRIMARY KEY AUTOINCREMENT,
-            name       TEXT    NOT NULL,
-            phone      TEXT    NOT NULL,
-            class_date TEXT    NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    con.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id             INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_key       TEXT    NOT NULL UNIQUE,
-            name           TEXT    NOT NULL,
-            phone          TEXT    NOT NULL,
-            lesson_count   INTEGER NOT NULL DEFAULT 0,
-            first_seen     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            last_seen      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    con.execute('''
-        CREATE TABLE IF NOT EXISTS admins (
-            username      TEXT PRIMARY KEY,
-            password_hash TEXT NOT NULL
-        )
-    ''')
-    # Seed default admin if not present
-    exists = con.execute(
-        'SELECT 1 FROM admins WHERE username = ?', ('dhdarm_admin',)
-    ).fetchone()
-    if not exists:
-        con.execute(
-            'INSERT INTO admins (username, password_hash) VALUES (?, ?)',
-            ('dhdarm_admin', generate_password_hash('sheshet'))
-        )
-    # Migration: rebuild users table if it has stale UNIQUE on phone or missing user_key
-    cols      = {row[1] for row in con.execute('PRAGMA table_info(users)')}
-    indexes   = con.execute('PRAGMA index_list(users)').fetchall()
-    phone_unique = any(
-        row[2] == 1  # unique flag
-        and con.execute(f'PRAGMA index_info("{row[1]}")').fetchone()[2] == 'phone'
-        for row in indexes
-    )
-    if 'user_key' not in cols or phone_unique:
-        con.execute('ALTER TABLE users RENAME TO users_old')
+    con = _Conn()
+    try:
         con.execute('''
-            CREATE TABLE users (
-                id             INTEGER PRIMARY KEY AUTOINCREMENT,
+            CREATE TABLE IF NOT EXISTS registrations (
+                id         SERIAL PRIMARY KEY,
+                name       TEXT    NOT NULL,
+                phone      TEXT    NOT NULL,
+                class_date TEXT    NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        con.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id             SERIAL PRIMARY KEY,
                 user_key       TEXT    NOT NULL UNIQUE,
                 name           TEXT    NOT NULL,
                 phone          TEXT    NOT NULL,
                 lesson_count   INTEGER NOT NULL DEFAULT 0,
+                admissions     INTEGER NOT NULL DEFAULT 0,
                 first_seen     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 last_seen      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
-        for row in con.execute('SELECT * FROM users_old').fetchall():
-            d = dict(row)
-            key = d.get('user_key') or (normalize_name(d['name']) + normalize_phone(d['phone']))
-            con.execute('''
-                INSERT INTO users (user_key, name, phone, lesson_count, first_seen, last_seen)
-                VALUES (?, ?, ?, ?, ?, ?)
-                ON CONFLICT(user_key) DO UPDATE SET
-                    lesson_count = MAX(lesson_count, excluded.lesson_count),
-                    last_seen    = excluded.last_seen
-            ''', (key, d['name'], d['phone'], d['lesson_count'],
-                  d.get('first_seen'), d.get('last_seen')))
-        con.execute('DROP TABLE users_old')
-    # Migration: add admissions column if missing
-    cols = {row[1] for row in con.execute('PRAGMA table_info(users)')}
-    if 'admissions' not in cols:
-        con.execute('ALTER TABLE users ADD COLUMN admissions INTEGER NOT NULL DEFAULT 0')
-    con.commit()
-    con.close()
+        con.execute('''
+            CREATE TABLE IF NOT EXISTS admins (
+                username      TEXT PRIMARY KEY,
+                password_hash TEXT NOT NULL
+            )
+        ''')
+        # Idempotent migration: add admissions column to existing deployments
+        con.execute('''
+            ALTER TABLE users ADD COLUMN IF NOT EXISTS admissions INTEGER NOT NULL DEFAULT 0
+        ''')
+        # Seed default admin if not present
+        con.execute('''
+            INSERT INTO admins (username, password_hash)
+            VALUES (%s, %s)
+            ON CONFLICT (username) DO NOTHING
+        ''', ('dhdarm_admin', generate_password_hash('sheshet')))
+        con.commit()
+    finally:
+        con.close()
 
 
 def get_db():
-    con = sqlite3.connect(DB_PATH, timeout=10)
-    con.row_factory = sqlite3.Row
-    con.execute('PRAGMA journal_mode=WAL')
-    return con
+    return _Conn()
 
 
 # ── Normalisation helpers ─────────────────────────────────────────────────────
@@ -150,10 +143,10 @@ def upsert_user(con, name, phone):
     user_key = name + phone
     con.execute('''
         INSERT INTO users (user_key, name, phone, lesson_count, admissions, last_seen)
-        VALUES (?, ?, ?, 1, 0, CURRENT_TIMESTAMP)
-        ON CONFLICT(user_key) DO UPDATE SET
-            lesson_count = lesson_count + 1,
-            admissions   = admissions - 1,
+        VALUES (%s, %s, %s, 1, 0, CURRENT_TIMESTAMP)
+        ON CONFLICT (user_key) DO UPDATE SET
+            lesson_count = users.lesson_count + 1,
+            admissions   = users.admissions - 1,
             last_seen    = CURRENT_TIMESTAMP
     ''', (user_key, name, phone))
 
@@ -161,7 +154,7 @@ def upsert_user(con, name, phone):
 def decrement_user(con, name, phone):
     user_key = make_user_key(name, phone)
     con.execute(
-        'UPDATE users SET lesson_count = lesson_count - 1, admissions = admissions + 1 WHERE user_key = ?',
+        'UPDATE users SET lesson_count = lesson_count - 1, admissions = admissions + 1 WHERE user_key = %s',
         (user_key,)
     )
 
@@ -209,25 +202,25 @@ def register():
     con = get_db()
     try:
         already = con.execute(
-            'SELECT 1 FROM registrations WHERE class_date = ? AND phone = ?',
+            'SELECT 1 FROM registrations WHERE class_date = %s AND phone = %s',
             (class_date, normalize_phone(phone))
         ).fetchone()
         if already:
             return jsonify({'error': 'כבר רשומ/ה לשיעור זה'}), 409
         count = con.execute(
-            'SELECT COUNT(*) FROM registrations WHERE class_date = ?',
+            'SELECT COUNT(*) AS cnt FROM registrations WHERE class_date = %s',
             (class_date,)
-        ).fetchone()[0]
+        ).fetchone()['cnt']
         if count >= 15:
             return jsonify({'error': 'class_full'}), 409
         con.execute(
-            'INSERT INTO registrations (name, phone, class_date) VALUES (?, ?, ?)',
+            'INSERT INTO registrations (name, phone, class_date) VALUES (%s, %s, %s)',
             (name, phone, class_date)
         )
         upsert_user(con, name, phone)
         user_key = make_user_key(name, phone)
         row = con.execute(
-            'SELECT admissions FROM users WHERE user_key = ?', (user_key,)
+            'SELECT admissions FROM users WHERE user_key = %s', (user_key,)
         ).fetchone()
         admissions = row['admissions'] if row else None
         con.commit()
@@ -241,10 +234,10 @@ def unregister(reg_id):
     con = get_db()
     try:
         row = con.execute(
-            'SELECT name, phone FROM registrations WHERE id = ?', (reg_id,)
+            'SELECT name, phone FROM registrations WHERE id = %s', (reg_id,)
         ).fetchone()
         if row:
-            con.execute('DELETE FROM registrations WHERE id = ?', (reg_id,))
+            con.execute('DELETE FROM registrations WHERE id = %s', (reg_id,))
             decrement_user(con, row['name'], row['phone'])
             con.commit()
         return jsonify({'ok': True})
@@ -275,7 +268,7 @@ def admin_login():
         con = get_db()
         try:
             row = con.execute(
-                'SELECT password_hash FROM admins WHERE username = ?', (username,)
+                'SELECT password_hash FROM admins WHERE username = %s', (username,)
             ).fetchone()
         finally:
             con.close()
@@ -325,14 +318,13 @@ def admin_update_registration(reg_id):
     con = get_db()
     try:
         old = con.execute(
-            'SELECT name, phone FROM registrations WHERE id = ?', (reg_id,)
+            'SELECT name, phone FROM registrations WHERE id = %s', (reg_id,)
         ).fetchone()
         if not old:
             return jsonify({'error': 'לא נמצא'}), 404
-        # Adjust user counters: undo old, apply new
         decrement_user(con, old['name'], old['phone'])
         con.execute(
-            'UPDATE registrations SET name=?, phone=?, class_date=? WHERE id=?',
+            'UPDATE registrations SET name=%s, phone=%s, class_date=%s WHERE id=%s',
             (name, phone, class_date, reg_id)
         )
         upsert_user(con, name, phone)
@@ -348,10 +340,10 @@ def admin_delete_registration(reg_id):
     con = get_db()
     try:
         row = con.execute(
-            'SELECT name, phone FROM registrations WHERE id = ?', (reg_id,)
+            'SELECT name, phone FROM registrations WHERE id = %s', (reg_id,)
         ).fetchone()
         if row:
-            con.execute('DELETE FROM registrations WHERE id = ?', (reg_id,))
+            con.execute('DELETE FROM registrations WHERE id = %s', (reg_id,))
             decrement_user(con, row['name'], row['phone'])
             con.commit()
         return jsonify({'ok': True})
@@ -388,12 +380,12 @@ def admin_update_user(user_id):
     con = get_db()
     try:
         conflict = con.execute(
-            'SELECT id FROM users WHERE user_key = ? AND id != ?', (new_key, user_id)
+            'SELECT id FROM users WHERE user_key = %s AND id != %s', (new_key, user_id)
         ).fetchone()
         if conflict:
             return jsonify({'error': 'משתמש עם מפתח זה כבר קיים'}), 409
         con.execute(
-            'UPDATE users SET user_key=?, name=?, phone=?, lesson_count=?, admissions=? WHERE id=?',
+            'UPDATE users SET user_key=%s, name=%s, phone=%s, lesson_count=%s, admissions=%s WHERE id=%s',
             (new_key, normalize_name(name), normalize_phone(phone), int(count), int(admissions), user_id)
         )
         con.commit()
@@ -412,12 +404,12 @@ def admin_cancel_class():
     con = get_db()
     try:
         rows = con.execute(
-            'SELECT id, name, phone FROM registrations WHERE class_date = ?',
+            'SELECT id, name, phone FROM registrations WHERE class_date = %s',
             (class_date,)
         ).fetchall()
         cancelled = [dict(r) for r in rows]
         for row in rows:
-            con.execute('DELETE FROM registrations WHERE id = ?', (row['id'],))
+            con.execute('DELETE FROM registrations WHERE id = %s', (row['id'],))
             decrement_user(con, row['name'], row['phone'])
         con.commit()
         return jsonify({'ok': True, 'cancelled': cancelled})
@@ -430,7 +422,7 @@ def admin_cancel_class():
 def admin_delete_user(user_id):
     con = get_db()
     try:
-        con.execute('DELETE FROM users WHERE id = ?', (user_id,))
+        con.execute('DELETE FROM users WHERE id = %s', (user_id,))
         con.commit()
         return jsonify({'ok': True})
     finally:
@@ -439,8 +431,9 @@ def admin_delete_user(user_id):
 
 # ── Entry point ───────────────────────────────────────────────────────────────
 
+init_db()
+
 if __name__ == '__main__':
-    init_db()
     port = int(os.environ.get('PORT', 5000))
     print(f'השרת פועל על http://localhost:{port}')
     app.run(host='0.0.0.0', port=port, debug=False)
