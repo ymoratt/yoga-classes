@@ -178,6 +178,26 @@
     }
     #cancel-wa-list { max-height: 280px; overflow-y: auto; }
 
+    /* ── Attendance lookup ── */
+    .attendance-picker-row {
+      display: flex; align-items: center; gap: 16px; margin-bottom: 18px; flex-wrap: wrap;
+    }
+    .attendance-picker-label { font-weight: 600; color: var(--green-dark); font-size: 0.97rem; }
+    .attendance-date-input {
+      border: 1.5px solid var(--green-mid); border-radius: 10px;
+      padding: 9px 14px; font-family: 'Signika', sans-serif; font-size: 0.97rem;
+      color: var(--text); background: var(--bg); outline: none;
+      transition: border-color 0.18s;
+    }
+    .attendance-date-input:focus { border-color: var(--green); }
+    .attendance-hint {
+      font-family: 'Basic', sans-serif; color: var(--text-soft); font-size: 0.93rem;
+      margin-bottom: 14px;
+    }
+    .attendance-class-label {
+      font-weight: 600; color: var(--green-dark); margin-bottom: 14px; font-size: 0.97rem;
+    }
+
     /* ── Idle warning banner ── */
     #idle-warning {
       display: none;
@@ -215,6 +235,25 @@
   <h2 class="section-title">שיעורים</h2>
   <div class="classes-list" id="classes-list">
     <div class="empty-msg">טוען...</div>
+  </div>
+
+  <!-- ── Attendance lookup ── -->
+  <h2 class="section-title">נוכחות לפי תאריך</h2>
+  <div style="margin-bottom:52px">
+    <div class="attendance-picker-row">
+      <label class="attendance-picker-label" for="attendance-date">בחר תאריך:</label>
+      <input type="date" id="attendance-date" class="attendance-date-input" onchange="lookupAttendance()">
+    </div>
+    <div id="attendance-hint" class="attendance-hint" style="display:none"></div>
+    <div id="attendance-result" style="display:none">
+      <div id="attendance-class-label" class="attendance-class-label"></div>
+      <div class="table-wrap" style="margin-bottom:0">
+        <table>
+          <thead><tr><th>#</th><th>שם</th><th>טלפון</th></tr></thead>
+          <tbody id="attendance-tbody"></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
   <!-- ── Registrations ── -->
@@ -335,6 +374,7 @@
     const res  = await fetch('/admin/api/registrations');
     regs       = await res.json();
     renderClasses();
+    lookupAttendance();
     const tbody = document.getElementById('reg-tbody');
     if (!regs.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty-msg">אין הרשמות.</td></tr>'; return; }
     tbody.innerHTML = regs.map((r, i) => `
@@ -390,7 +430,9 @@
       if (!classMap[r.class_date]) classMap[r.class_date] = [];
       classMap[r.class_date].push(r);
     });
-    const dates = Object.keys(classMap).sort();
+    const dates = Object.keys(classMap)
+      .sort((a, b) => parseClassDateLabel(a) - parseClassDateLabel(b))
+      .slice(-3);
     const container = document.getElementById('classes-list');
     if (!dates.length) {
       container.innerHTML = '<div class="empty-msg">אין שיעורים עם הרשמות.</div>';
@@ -524,6 +566,65 @@
     if (!confirm('למחוק משתמש זה?')) return;
     await fetch(`/admin/api/users/${id}`, { method: 'DELETE' });
     loadUsers();
+  }
+
+  /* ── Attendance lookup ── */
+  const ATT_HE_DAYS   = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+  const ATT_HE_MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+  const ATT_TIMES     = { 0: '18:30', 2: '09:15', 4: '09:15' };
+  const HE_MONTH_MAP  = Object.fromEntries(ATT_HE_MONTHS.map((m, i) => [m, i]));
+
+  // Parse a stored class_date label ("יום ראשון, 13 באפריל 2025 | 18:30") into a Date
+  function parseClassDateLabel(label) {
+    const m = label.match(/(\d+) ב(\S+) (\d{4})/);
+    if (!m) return new Date(0);
+    return new Date(parseInt(m[3]), HE_MONTH_MAP[m[2]], parseInt(m[1]));
+  }
+
+  function parseDateLocal(val) {
+    const [y, m, d] = val.split('-').map(Number);
+    return new Date(y, m - 1, d);
+  }
+
+  function buildClassLabel(d) {
+    const dow     = d.getDay();
+    const dateStr = d.getDate() + ' ב' + ATT_HE_MONTHS[d.getMonth()] + ' ' + d.getFullYear();
+    return 'יום ' + ATT_HE_DAYS[dow] + ', ' + dateStr + ' | ' + ATT_TIMES[dow];
+  }
+
+  function lookupAttendance() {
+    const val      = document.getElementById('attendance-date').value;
+    const hintEl   = document.getElementById('attendance-hint');
+    const resultEl = document.getElementById('attendance-result');
+    if (!val) { hintEl.style.display = 'none'; resultEl.style.display = 'none'; return; }
+
+    const d   = parseDateLocal(val);
+    const dow = d.getDay();
+    if (!(dow in ATT_TIMES)) {
+      hintEl.textContent   = 'בחר תאריך של יום ראשון, שלישי או חמישי';
+      hintEl.style.display = '';
+      resultEl.style.display = 'none';
+      return;
+    }
+
+    hintEl.style.display = 'none';
+    const label   = buildClassLabel(d);
+    const matches = regs.filter(r => r.class_date === label);
+
+    document.getElementById('attendance-class-label').textContent =
+      label + ' — ' + matches.length + ' רשומים';
+
+    const tbody = document.getElementById('attendance-tbody');
+    tbody.innerHTML = matches.length
+      ? matches.map((r, i) => `
+          <tr>
+            <td>${i + 1}</td>
+            <td>${esc(r.name)}</td>
+            <td dir="ltr">${esc(formatPhoneLocal(r.phone))}</td>
+          </tr>`).join('')
+      : '<tr><td colspan="3" class="empty-msg">אין רשומים לשיעור זה.</td></tr>';
+
+    resultEl.style.display = '';
   }
 
   /* ── XSS guard ── */
