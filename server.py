@@ -431,7 +431,16 @@ def admin_delete_user(user_id):
 
 # ── Entry point ───────────────────────────────────────────────────────────────
 
-init_db()
+# Initialise the DB on the first request so this never runs at import/build time.
+_db_ready = False
+
+@app.before_request
+def _ensure_db():
+    global _db_ready
+    if not _db_ready:
+        init_db()
+        _db_ready = True
+
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
