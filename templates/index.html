@@ -584,7 +584,7 @@
 <div class="wrap-white">
   <div class="inner">
     <div class="section-head">
-      <h2 class="section-title">שיעורים קרובים</h2>
+      <h2 class="section-title">שיעורי השבוע</h2>
     </div>
     <div class="classes-grid">
 
@@ -742,12 +742,21 @@
   const HE_DAYS   = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
   const HE_MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
 
-  function nextWeekday(dayIndex) {
+  // Returns the Sunday that starts the displayed week.
+  // The Israeli week is Sun–Sat. On Saturday we already show next week.
+  function getDisplayWeekSunday() {
     const now = new Date();
-    let diff  = dayIndex - now.getDay();
-    if (diff <= 0) diff += 7;
-    const d   = new Date(now);
-    d.setDate(now.getDate() + diff);
+    const dow = now.getDay(); // 0=Sun … 6=Sat
+    const sun = new Date(now);
+    sun.setDate(now.getDate() - dow);          // rewind to this week's Sunday
+    if (dow === 6) sun.setDate(sun.getDate() + 7); // Saturday → show next week
+    return sun;
+  }
+
+  function classDateForDay(dayIndex) {
+    const sun = getDisplayWeekSunday();
+    const d   = new Date(sun);
+    d.setDate(sun.getDate() + dayIndex);
     return d;
   }
 
@@ -756,12 +765,12 @@
   }
 
   function buildClassDateLabel(dayIndex, time) {
-    return 'יום ' + HE_DAYS[dayIndex] + ', ' + formatDateHe(nextWeekday(dayIndex)) + ' | ' + time;
+    return 'יום ' + HE_DAYS[dayIndex] + ', ' + formatDateHe(classDateForDay(dayIndex)) + ' | ' + time;
   }
 
-  document.getElementById('date-sun').textContent = formatDateHe(nextWeekday(0));
-  document.getElementById('date-tue').textContent = formatDateHe(nextWeekday(2));
-  document.getElementById('date-thu').textContent = formatDateHe(nextWeekday(4));
+  document.getElementById('date-sun').textContent = formatDateHe(classDateForDay(0));
+  document.getElementById('date-tue').textContent = formatDateHe(classDateForDay(2));
+  document.getElementById('date-thu').textContent = formatDateHe(classDateForDay(4));
 
   let currentClassDate = '';
   let allUsers = [];
