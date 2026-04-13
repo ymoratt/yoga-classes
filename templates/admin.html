@@ -341,7 +341,7 @@
       <tr>
         <td>${i+1}</td>
         <td>${esc(r.name)}</td>
-        <td>${esc(r.phone)}</td>
+        <td dir="ltr">${esc(formatPhoneLocal(r.phone))}</td>
         <td>${esc(r.class_date)}</td>
         <td>${fmtDate(r.created_at)}</td>
         <td><div class="actions">
@@ -355,7 +355,7 @@
     const r = regs.find(x => x.id === id);
     document.getElementById('edit-reg-id').value    = r.id;
     document.getElementById('edit-reg-name').value  = r.name;
-    document.getElementById('edit-reg-phone').value = r.phone;
+    document.getElementById('edit-reg-phone').value = formatPhoneLocal(r.phone);
     document.getElementById('edit-reg-date').value  = r.class_date;
     document.getElementById('reg-modal-err').style.display = 'none';
     openModal('reg-modal');
@@ -450,7 +450,7 @@
           const phone = r.phone.replace('+', '');
           const msg   = encodeURIComponent(`סאט נאמ, ${r.name} \nשיעור היוגה ביום ${cancelClassDate} בוטל.\n\nעדכונים נוספים בקבוצה.`);
           return `<a class="wa-link" href="https://wa.me/${phone}?text=${msg}" target="_blank">
-            <span class="wa-icon">💬</span>${esc(r.name)} — ${esc(r.phone)}
+            <span class="wa-icon">💬</span>${esc(r.name)} — <span dir="ltr">${esc(formatPhoneLocal(r.phone))}</span>
           </a>`;
         }).join('');
       } else {
@@ -480,7 +480,7 @@
       <tr>
         <td>${i+1}</td>
         <td>${esc(u.name)}</td>
-        <td>${esc(u.phone)}</td>
+        <td dir="ltr">${esc(formatPhoneLocal(u.phone))}</td>
         <td><span class="badge-count">${u.lesson_count}</span></td>
         <td><span class="badge-count">${u.admissions ?? 0}</span></td>
         <td>${fmtDate(u.first_seen)}</td>
@@ -496,7 +496,7 @@
     const u = users.find(x => x.id === id);
     document.getElementById('edit-usr-id').value          = u.id;
     document.getElementById('edit-usr-name').value        = u.name;
-    document.getElementById('edit-usr-phone').value       = u.phone;
+    document.getElementById('edit-usr-phone').value       = formatPhoneLocal(u.phone);
     document.getElementById('edit-usr-count').value       = u.lesson_count;
     document.getElementById('edit-usr-admissions').value  = u.admissions ?? 0;
     document.getElementById('usr-modal-err').style.display = 'none';
@@ -529,6 +529,14 @@
   /* ── XSS guard ── */
   function esc(s) {
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function formatPhoneLocal(phone) {
+    const digits = String(phone).replace(/\D/g, '');
+    const local  = digits.startsWith('972') ? '0' + digits.slice(3) : digits;
+    if (local.length === 10) return local.slice(0,3) + '-' + local.slice(3,6) + ' ' + local.slice(6);
+    if (local.length === 9)  return local.slice(0,2) + '-' + local.slice(2,5) + ' ' + local.slice(5);
+    return phone;
   }
 
   /* ── Init ── */

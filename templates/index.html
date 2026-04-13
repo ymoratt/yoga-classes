@@ -938,7 +938,7 @@
         li.innerHTML =
           '<div class="unreg-item-info">' +
             '<div class="unreg-item-name">'   + escHtml(reg.name)  + '</div>' +
-            '<div class="unreg-item-detail">' + escHtml(reg.phone) + '</div>' +
+            '<div class="unreg-item-detail" dir="ltr">' + escHtml(formatPhoneLocal(reg.phone)) + '</div>' +
           '</div>' +
           '<button class="btn-remove" onclick="removeReg(' + reg.id + ', this)">הסר</button>';
         listEl.appendChild(li);
@@ -966,6 +966,14 @@
 
   function escHtml(s) {
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function formatPhoneLocal(phone) {
+    const digits = String(phone).replace(/\D/g, '');
+    const local  = digits.startsWith('972') ? '0' + digits.slice(3) : digits;
+    if (local.length === 10) return local.slice(0,3) + '-' + local.slice(3,6) + ' ' + local.slice(6);
+    if (local.length === 9)  return local.slice(0,2) + '-' + local.slice(2,5) + ' ' + local.slice(5);
+    return phone;
   }
 
   document.addEventListener('keydown', e => {
@@ -1007,7 +1015,7 @@
         tr.innerHTML =
           '<td>' + (i + 1) + '</td>' +
           '<td>' + escHtml(r.name)  + '</td>' +
-          '<td>' + escHtml(r.phone) + '</td>';
+          '<td dir="ltr">' + escHtml(formatPhoneLocal(r.phone)) + '</td>';
         tbody.appendChild(tr);
       });
 
