@@ -1,0 +1,4 @@
+yoga_classes.db
+.secret_key
+__pycache__/
+*.pyc
