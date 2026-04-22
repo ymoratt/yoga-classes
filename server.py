@@ -3,6 +3,7 @@ import mimetypes
 import os
 import re
 import secrets
+from datetime import date
 import psycopg2
 import psycopg2.extras
 
@@ -185,7 +186,9 @@ def admin_required(f):
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    today = date.today()
+    show_friday = date(2026, 4, 20) <= today <= date(2026, 4, 26)
+    return render_template('index.html', show_friday=show_friday)
 
 
 # ── Public API ────────────────────────────────────────────────────────────────
