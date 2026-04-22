@@ -628,6 +628,18 @@
         <button class="btn-list" onclick="openListModal(4, '09:15')">הצג רשומים</button>
       </div>
 
+      <!-- Friday 25 Apr 2026 — one-time class, hidden unless current week's Friday is that date -->
+      <div class="class-card" id="card-fri-special" style="display:none;">
+        <img src="/static/assets/class_logo1.gif" class="class-logo" alt="שיעור יוגה שישי">
+        <div class="class-day">יום שישי</div>
+        <div class="class-date" id="date-fri-special"></div>
+        <div class="card-divider"></div>
+        <div class="class-time">14:00</div>
+        <button class="btn-reg" onclick="openRegModal(5, '14:00')">הרשמה</button>
+        <button class="btn-unreg" onclick="openUnregModal(5, '14:00')">ביטול הרשמה</button>
+        <button class="btn-list" onclick="openListModal(5, '14:00')">הצג רשומים</button>
+      </div>
+
     </div>
   </div>
 </div>
@@ -775,6 +787,15 @@
   document.getElementById('date-sun').textContent = formatDateHe(classDateForDay(0));
   document.getElementById('date-tue').textContent = formatDateHe(classDateForDay(2));
   document.getElementById('date-thu').textContent = formatDateHe(classDateForDay(4));
+
+  // One-time Friday class: show only during the week of 25 Apr 2026
+  (function () {
+    const fri = classDateForDay(5);
+    if (fri.getFullYear() === 2026 && fri.getMonth() === 3 && fri.getDate() === 25) {
+      document.getElementById('date-fri-special').textContent = formatDateHe(fri);
+      document.getElementById('card-fri-special').style.display = '';
+    }
+  })();
 
   let currentClassDate = '';
   let allUsers = [];
