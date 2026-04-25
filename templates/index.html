@@ -628,19 +628,6 @@
         <button class="btn-list" onclick="openListModal(4, '09:15')">הצג רשומים</button>
       </div>
 
-      <!-- Friday 25 Apr 2026 — one-time class, rendered server-side only for this week -->
-      {% if show_friday %}
-      <div class="class-card">
-        <img src="/static/assets/class_logo1.gif" class="class-logo" alt="שיעור יוגה שישי">
-        <div class="class-day">יום שישי</div>
-        <div class="class-date" id="date-fri-special"></div>
-        <div class="card-divider"></div>
-        <div class="class-time">14:00</div>
-        <button class="btn-reg" onclick="openRegModal(5, '14:00')">הרשמה</button>
-        <button class="btn-unreg" onclick="openUnregModal(5, '14:00')">ביטול הרשמה</button>
-        <button class="btn-list" onclick="openListModal(5, '14:00')">הצג רשומים</button>
-      </div>
-      {% endif %}
 
     </div>
   </div>
@@ -789,10 +776,6 @@
   document.getElementById('date-sun').textContent = formatDateHe(classDateForDay(0));
   document.getElementById('date-tue').textContent = formatDateHe(classDateForDay(2));
   document.getElementById('date-thu').textContent = formatDateHe(classDateForDay(4));
-
-  {% if show_friday %}
-  document.getElementById('date-fri-special').textContent = formatDateHe(classDateForDay(5));
-  {% endif %}
 
   let currentClassDate = '';
   let allUsers = [];
