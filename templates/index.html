@@ -106,11 +106,12 @@
     /* ===== CLASSES GRID ===== */
     .classes-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 28px;
     }
 
-    @media (max-width: 760px) { .classes-grid { grid-template-columns: 1fr; max-width: 360px; margin: 0 auto; } }
+    @media (max-width: 900px) { .classes-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 560px) { .classes-grid { grid-template-columns: 1fr; max-width: 360px; margin: 0 auto; } }
 
     .class-card {
       background: var(--white);
@@ -628,6 +629,18 @@
         <button class="btn-list" onclick="openListModal(4, '09:15')">הצג רשומים</button>
       </div>
 
+      <!-- CineMantra Thursday Evening -->
+      <div class="class-card">
+        <img src="/static/assets/class_logo2.gif" class="class-logo" alt="CineMantra">
+        <div class="class-day">סינמנטרה</div>
+        <div class="class-date">סרט יוגה קהילתי</div>
+        <div class="class-date" id="date-cinmantra"></div>
+        <div class="card-divider"></div>
+        <div class="class-time">20:00</div>
+        <button class="btn-reg" onclick="openRegModal(4, '20:00')">הרשמה</button>
+        <button class="btn-unreg" onclick="openUnregModal(4, '20:00')">ביטול הרשמה</button>
+        <button class="btn-list" onclick="openListModal(4, '20:00')">הצג רשומים</button>
+      </div>
 
     </div>
   </div>
@@ -773,9 +786,10 @@
     return 'יום ' + HE_DAYS[dayIndex] + ', ' + formatDateHe(classDateForDay(dayIndex)) + ' | ' + time;
   }
 
-  document.getElementById('date-sun').textContent = formatDateHe(classDateForDay(0));
-  document.getElementById('date-tue').textContent = formatDateHe(classDateForDay(2));
-  document.getElementById('date-thu').textContent = formatDateHe(classDateForDay(4));
+  document.getElementById('date-sun').textContent       = formatDateHe(classDateForDay(0));
+  document.getElementById('date-tue').textContent       = formatDateHe(classDateForDay(2));
+  document.getElementById('date-thu').textContent       = formatDateHe(classDateForDay(4));
+  document.getElementById('date-cinmantra').textContent = formatDateHe(classDateForDay(4));
 
   let currentClassDate = '';
   let allUsers = [];
