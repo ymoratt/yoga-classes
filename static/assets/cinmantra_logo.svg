@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 110">
+
+  <!-- Board body -->
+  <rect x="8" y="32" width="84" height="68" rx="5" fill="#1a1a1a"/>
+
+  <!-- Writing area -->
+  <rect x="13" y="46" width="74" height="50" rx="3" fill="#f5f5ec"/>
+
+  <!-- Ruled lines -->
+  <line x1="18" y1="57" x2="82" y2="57" stroke="#c8c8b8" stroke-width="1.5"/>
+  <line x1="18" y1="68" x2="82" y2="68" stroke="#c8c8b8" stroke-width="1.5"/>
+  <line x1="18" y1="79" x2="82" y2="79" stroke="#c8c8b8" stroke-width="1.5"/>
+
+  <!-- Clapstick bar -->
+  <rect x="8" y="18" width="84" height="17" rx="5" fill="#1a1a1a"/>
+
+  <!-- Black-and-white diagonal stripes on clapstick -->
+  <clipPath id="stClip"><rect x="8" y="18" width="84" height="17" rx="5"/></clipPath>
+  <g clip-path="url(#stClip)" fill="white">
+    <polygon points="12,18  8,35 11,35 15,18"/>
+    <polygon points="19,18 15,35 18,35 22,18"/>
+    <polygon points="26,18 22,35 25,35 29,18"/>
+    <polygon points="33,18 29,35 32,35 36,18"/>
+    <polygon points="40,18 36,35 39,35 43,18"/>
+    <polygon points="47,18 43,35 46,35 50,18"/>
+    <polygon points="54,18 50,35 53,35 57,18"/>
+    <polygon points="61,18 57,35 60,35 64,18"/>
+    <polygon points="68,18 64,35 67,35 71,18"/>
+    <polygon points="75,18 71,35 74,35 78,18"/>
+    <polygon points="82,18 78,35 81,35 85,18"/>
+    <polygon points="89,18 85,35 88,35 92,18"/>
+  </g>
+
+  <!-- Hinge bolts -->
+  <circle cx="13"  cy="26.5" r="3.5" fill="#555"/>
+  <circle cx="87"  cy="26.5" r="3.5" fill="#555"/>
+  <circle cx="13"  cy="26.5" r="1.5" fill="#888"/>
+  <circle cx="87"  cy="26.5" r="1.5" fill="#888"/>
+
+  <!-- Decorative bullet points on lines -->
+  <circle cx="18" cy="57" r="1.8" fill="#bbb"/>
+  <circle cx="18" cy="68" r="1.8" fill="#bbb"/>
+  <circle cx="18" cy="79" r="1.8" fill="#bbb"/>
+
+</svg>
